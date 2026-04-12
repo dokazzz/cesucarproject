@@ -1,0 +1,15 @@
+[project]
+name = "cesucar-backend"
+version = "1.0.0"
+description = "Microserviço Python para matching inteligente de caronas universitárias"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.128.1",
+    "pydantic>=2.0.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "httpx>=0.25.0"
+]
