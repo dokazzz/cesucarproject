@@ -31,22 +31,22 @@
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --bg: #111724;
-  --bg-soft: #151e2d;
-  --surface: #1a2535;
-  --surface-2: #202c3d;
-  --surface-3: #253346;
-  --text: #f4f7fb;
-  --text-muted: #b5c0cf;
-  --text-dim: #8190a4;
-  --border: #344357;
-  --glass: rgba(255, 255, 255, 0.06);
-  --glass-hover: rgba(255, 255, 255, 0.1);
-  --glass-border: rgba(255, 255, 255, 0.11);
-  --orange-soft: rgba(232, 93, 36, 0.16);
+  --bg: #0d1420;
+  --bg-soft: #111b2a;
+  --surface: #162030;
+  --surface-2: #1c2a3d;
+  --surface-3: #223348;
+  --text: #eef2f8;
+  --text-muted: #9aaabb;
+  --text-dim: #6a7d94;
+  --border: #2e3f54;
+  --glass: rgba(255, 255, 255, 0.05);
+  --glass-hover: rgba(255, 255, 255, 0.09);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --orange-soft: rgba(232, 93, 36, 0.18);
   --green-soft: rgba(47, 158, 131, 0.16);
-  --shadow: 0 18px 46px rgba(0, 0, 0, 0.24);
-  --shadow-lg: 0 26px 80px rgba(0, 0, 0, 0.34);
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
+  --shadow-lg: 0 28px 80px rgba(0, 0, 0, 0.5);
 }
 
 *,
@@ -673,9 +673,10 @@ textarea.form-input {
 }
 
 .reveal {
-  opacity: 1;
-  transform: none;
-  transition: opacity 420ms ease, transform 420ms ease;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 480ms cubic-bezier(0.22, 1, 0.36, 1),
+              transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .reveal.visible {
@@ -1179,9 +1180,15 @@ footer {
 .kpi {
   position: relative;
   display: grid;
-  gap: 7px;
-  padding: 18px;
+  gap: 6px;
+  padding: 20px;
   overflow: hidden;
+  transition: transform var(--t), box-shadow var(--t);
+}
+
+.kpi:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
 }
 
 .kpi::before {
@@ -1189,28 +1196,34 @@ footer {
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
-  background: var(--orange);
+  background: linear-gradient(to bottom, var(--orange), var(--blue));
 }
 
 .kpi-icon {
   color: var(--blue);
-  font-size: 1.35rem;
+  font-size: 1.2rem;
+  opacity: 0.7;
 }
 
 .kpi-val {
-  font-size: 1.85rem;
+  font-size: 2rem;
   font-weight: 900;
+  letter-spacing: -0.03em;
+  color: var(--text);
 }
 
-.kpi-label,
-.kpi-trend {
+.kpi-label {
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .kpi-trend {
   color: var(--green);
-  font-weight: 800;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .main-grid {
@@ -1241,16 +1254,17 @@ footer {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px;
-  margin-bottom: 10px;
+  padding: 14px 16px;
+  margin-bottom: 8px;
   cursor: pointer;
   transition: transform var(--t), border-color var(--t), box-shadow var(--t);
+  border-radius: var(--radius);
 }
 
-.ride-card:hover,
-.driver-card:hover {
+.ride-card:hover {
   transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--blue) 34%, var(--glass-border));
+  box-shadow: 0 4px 18px rgba(15, 76, 129, 0.08);
 }
 
 .ride-info {
@@ -1261,7 +1275,8 @@ footer {
 .ride-route {
   overflow: hidden;
   color: var(--text);
-  font-weight: 900;
+  font-weight: 800;
+  font-size: 0.95rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1270,17 +1285,30 @@ footer {
   color: var(--orange);
 }
 
+.driver-mini {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .ride-meta {
-  margin-top: 5px;
+  margin-top: 4px;
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
 }
 
 .ride-price,
 .price-big {
   color: var(--orange);
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 900;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 
 .side-card {
@@ -1508,14 +1536,49 @@ footer {
   min-width: 190px;
 }
 
+/* ------------------------------------------------------------------
+   Driver / Ride Cards — estilo BlaBlaCar/Uber
+   ------------------------------------------------------------------ */
+
 .driver-card {
   display: grid;
   grid-template-columns: 56px minmax(0, 1fr) auto;
-  gap: 16px;
+  gap: 18px;
   align-items: center;
-  padding: 18px;
+  padding: 20px 22px;
   margin-bottom: 12px;
-  transition: transform var(--t), border-color var(--t);
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-border);
+  background: var(--surface);
+  transition: transform var(--t), border-color var(--t), box-shadow var(--t);
+  position: relative;
+  overflow: hidden;
+}
+
+.driver-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--blue);
+  opacity: 0;
+  transition: opacity var(--t);
+}
+
+.driver-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--blue) 30%, var(--glass-border));
+  box-shadow: var(--shadow);
+}
+
+.driver-card:hover::before {
+  opacity: 1;
+}
+
+.driver-card-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .driver-details {
@@ -1523,25 +1586,135 @@ footer {
 }
 
 .driver-name {
-  margin-bottom: 3px;
-  font-weight: 900;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
+  color: var(--text);
 }
 
-.driver-curso,
-.price-sub {
+.driver-curso {
+  font-size: 0.78rem;
   color: var(--text-muted);
-  font-size: 0.8rem;
+  margin-bottom: 8px;
 }
 
 .driver-route {
-  margin: 7px 0;
-  font-weight: 850;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.route-city {
+  color: var(--text);
+}
+
+.route-arrow {
+  color: var(--orange);
+  font-weight: 900;
+}
+
+.route-time {
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.driver-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  align-items: center;
 }
 
 .driver-actions {
-  display: grid;
-  justify-items: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   gap: 8px;
+  flex-shrink: 0;
+}
+
+.driver-price {
+  text-align: right;
+}
+
+.driver-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.price-sub {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  text-align: right;
+}
+
+.price-big {
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: var(--orange);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.badge-rating {
+  background: rgba(244, 185, 66, 0.14);
+  color: #b08300;
+  border: 1px solid rgba(244, 185, 66, 0.35);
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+[data-theme="dark"] .badge-rating {
+  background: rgba(244, 185, 66, 0.18);
+  color: #f4d178;
+  border-color: rgba(244, 185, 66, 0.28);
+}
+
+.ride-reserved-badge {
+  padding: 4px 10px;
+}
+
+.btn-cancel {
+  color: var(--red) !important;
+  border-color: rgba(220, 76, 76, 0.35) !important;
+}
+
+.btn-cancel:hover {
+  background: rgba(220, 76, 76, 0.08) !important;
+}
+
+/* Responsivo: cards em mobile */
+@media (max-width: 640px) {
+  .driver-card {
+    grid-template-columns: 44px 1fr;
+    grid-template-rows: auto auto;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .driver-actions {
+    grid-column: 1 / -1;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .driver-btns {
+    flex-direction: row;
+  }
+
+  .driver-price {
+    text-align: left;
+  }
 }
 
 .auth-page {
@@ -2192,22 +2365,42 @@ footer {
   margin-top: 10px;
 }
 
+/* tipo-chip: active base */
 .tipo-chip.active {
-  background: rgba(15, 76, 129, 0.15);
+  background: rgba(15, 76, 129, 0.12);
   border-color: var(--blue);
   color: var(--blue-light);
 }
 
-.tipo-chip[onclick*="ida"].active {
+/* tipo-chip: "todos" ativo */
+.tipo-chip[data-tipo="todos"].active {
+  background: rgba(15, 76, 129, 0.10);
+  border-color: var(--blue-light);
+  color: var(--blue-light);
+}
+
+/* tipo-chip: "ida" ativo — azul */
+.tipo-chip[data-tipo="ida"].active {
   background: rgba(15, 76, 129, 0.12);
   border-color: var(--blue);
   color: var(--blue);
 }
 
-.tipo-chip[onclick*="volta"].active {
+/* tipo-chip: "volta" ativo — verde */
+.tipo-chip[data-tipo="volta"].active {
   background: rgba(47, 158, 131, 0.12);
   border-color: var(--green);
   color: var(--green);
+}
+
+[data-theme="dark"] .tipo-chip[data-tipo="ida"].active {
+  color: #7eb8e8;
+  border-color: #7eb8e8;
+}
+
+[data-theme="dark"] .tipo-chip[data-tipo="volta"].active {
+  color: #5dcdb7;
+  border-color: #5dcdb7;
 }
 
 /* ------------------------------------------------------------------

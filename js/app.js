@@ -6,12 +6,12 @@
 
   const demoUser = {
     id: 1,
-    name: "Ana Costa",
+    name: "Demo",
     email: "admin@cesucar.com",
     curso: "Ciência da Computação",
     cidade: "Cachoeirinha",
     telefone: "(51) 99999-0000",
-    avatar: "AC",
+    avatar: "DM",
     rating: "4.9",
     trips: 18,
     perfil: "passageiro",
@@ -153,6 +153,12 @@
   // ------------------------------------------------------------------
 
   function seed() {
+    // Atualiza conta demo se o nome ainda for o antigo ("Ana Costa")
+    const storedUser = read("currentUser", null);
+    if (storedUser && storedUser.email === "admin@cesucar.com" && storedUser.name !== "Demo") {
+      write("currentUser", { ...demoUser, perfil: storedUser.perfil || "passageiro" });
+    }
+
     // Força reseed se os dados ainda usam rotas cidade→cidade (versão antiga)
     const storedRides = read("rides", null);
     const needsReseed = !storedRides || storedRides.some(
@@ -265,12 +271,15 @@
   function login(email, password) {
     const saved = read("currentUser", null);
     const okDemo = normalize(email) === "admin@cesucar.com" && password === "123456";
-    const okSaved = saved && normalize(saved.email) === normalize(email) && password.length >= 6;
+    // Conta customizada: e-mail salvo diferente do demo e senha com 6+ chars
+    const isCustom = saved && normalize(saved.email) !== "admin@cesucar.com";
+    const okSaved = isCustom && normalize(saved.email) === normalize(email) && password.length >= 6;
 
     if (!okDemo && !okSaved) {
       return { ok: false, error: "E-mail ou senha inválidos." };
     }
 
+    // Conta demo sempre carrega demoUser (nunca dados antigos salvos)
     write("currentUser", okSaved ? saved : demoUser);
     write("loggedIn", true);
     return { ok: true };
