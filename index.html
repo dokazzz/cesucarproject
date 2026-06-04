@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CESUCAR — Caronas universitárias</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="bg-mesh"></div>
+  <div class="bg-grid"></div>
+
+  <nav class="navbar">
+    <a href="index.html" class="navbar-logo">
+      <img src="logo.png" alt="CESUCAR" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+      <span class="navbar-logo-fallback">CESUCAR</span>
+    </a>
+
+    <ul class="navbar-links">
+      <li><a href="index.html" class="active">Início</a></li>
+      <li><a href="procurar-carona.html">Procurar</a></li>
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="#como-funciona">Como funciona</a></li>
+    </ul>
+
+    <div class="navbar-right">
+      <div class="theme-toggle"></div>
+      <a href="login.html" class="btn btn-ghost">Entrar</a>
+      <a href="cadastro.html" class="btn btn-primary">Cadastrar</a>
+      <button class="hamburger" id="hamburger" aria-label="Abrir menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="mobile-drawer" id="mobileDrawer">
+    <a href="index.html">Início</a>
+    <a href="procurar-carona.html">Procurar carona</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="#como-funciona">Como funciona</a>
+    <div class="drawer-btns">
+      <a href="login.html" class="btn btn-ghost">Entrar</a>
+      <a href="cadastro.html" class="btn btn-primary">Cadastrar</a>
+    </div>
+  </div>
+
+  <main>
+    <section class="home-hero">
+      <div class="hero-copy reveal">
+        <div class="section-tag">Caronas CESUCA</div>
+        <h1 class="hero-title">Vá para a faculdade com quem <em>já faz parte</em> da sua rotina.</h1>
+        <p class="hero-subtitle">
+          Encontre estudantes com rotas parecidas, combine horários com segurança e reduza o custo do trajeto.
+        </p>
+
+        <div class="hero-search">
+          <div class="hero-search-grid">
+            <div class="form-group">
+              <label class="form-label" for="homeOrigem">Origem</label>
+              <input class="form-input" id="homeOrigem" type="text" placeholder="Ex.: Cachoeirinha" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="homeDestino">Destino</label>
+              <input class="form-input" id="homeDestino" type="text" placeholder="Ex.: Porto Alegre" />
+            </div>
+            <button class="btn btn-primary btn-lg" onclick="doSearch()">Buscar</button>
+          </div>
+          <div class="hero-actions">
+            <a href="procurar-carona.html" class="btn btn-ghost">Ver todas as caronas</a>
+            <span class="hero-login-hint"><a href="login.html">Entre</a> para acompanhar reservas e notificações.</span>
+          </div>
+        </div>
+      </div>
+
+      <aside class="hero-panel reveal" aria-label="Resumo de caronas">
+        <div class="hero-panel-head">
+          <div>
+            <div class="hero-panel-title">Rota em destaque</div>
+            <div class="hero-panel-route">Cachoeirinha → CESUCA</div>
+          </div>
+          <strong>R$10</strong>
+        </div>
+
+        <div class="hero-map">
+          <div class="route-line">
+            <span class="route-dot fill"></span>
+            <strong>Cachoeirinha</strong>
+            <span>07:20</span>
+          </div>
+          <div class="route-line">
+            <span class="route-dot"></span>
+            <strong>Porto Alegre</strong>
+            <span>08:05</span>
+          </div>
+        </div>
+
+        <div class="hero-panel-cards">
+          <div class="mini-card"><strong>3</strong><span>vagas abertas</span></div>
+          <div class="mini-card"><strong>4.9</strong><span>avaliação média</span></div>
+          <div class="mini-card"><strong>18</strong><span>viagens no mês</span></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="stats-band reveal" aria-label="Números da plataforma">
+      <div class="stat-item">
+        <div class="stat-n" data-target="1240">0+</div>
+        <div class="stat-l">estudantes cadastrados</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-n" data-target="3870">0+</div>
+        <div class="stat-l">caronas realizadas</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-n">98%</div>
+        <div class="stat-l">satisfação dos usuários</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-n">4.9</div>
+        <div class="stat-l">avaliação média</div>
+      </div>
+    </section>
+
+    <section class="section reveal">
+      <h2 class="sec-title">O que você pode fazer</h2>
+      <div class="explore-grid">
+        <a href="procurar-carona.html" class="explore-card">
+          <span class="ec-icon">⌕</span>
+          <strong class="ec-title">Procurar carona</strong>
+          <p class="ec-desc">Filtre por cidade, data, horário e preço para encontrar a melhor opção.</p>
+          <span class="ec-link">Buscar agora</span>
+        </a>
+        <a href="cadastro.html" class="explore-card">
+          <span class="ec-icon">+</span>
+          <strong class="ec-title">Entrar na comunidade</strong>
+          <p class="ec-desc">Crie sua conta e mantenha suas reservas organizadas no dashboard.</p>
+          <span class="ec-link">Criar conta</span>
+        </a>
+        <a href="dashboard.html" class="explore-card">
+          <span class="ec-icon">✓</span>
+          <strong class="ec-title">Acompanhar reservas</strong>
+          <p class="ec-desc">Veja caronas confirmadas, notificações e atividades recentes.</p>
+          <span class="ec-link">Abrir dashboard</span>
+        </a>
+        <a href="login.html" class="explore-card">
+          <span class="ec-icon">↳</span>
+          <strong class="ec-title">Acesso rápido</strong>
+          <p class="ec-desc">Use a conta demo para testar a experiência completa da plataforma.</p>
+          <span class="ec-link">Fazer login</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="section compact reveal">
+      <h2 class="sec-title">Rotas mais buscadas</h2>
+      <div class="routes-grid">
+        <a href="procurar-carona.html?origem=Cachoeirinha&destino=Porto+Alegre" class="route-chip">
+          <span>Cachoeirinha <span class="rc-arrow">→</span> Porto Alegre</span>
+          <span class="rc-price">R$10</span>
+        </a>
+        <a href="procurar-carona.html?origem=Gravataí&destino=Porto+Alegre" class="route-chip">
+          <span>Gravataí <span class="rc-arrow">→</span> Porto Alegre</span>
+          <span class="rc-price">R$12</span>
+        </a>
+        <a href="procurar-carona.html?origem=Canoas&destino=Porto+Alegre" class="route-chip">
+          <span>Canoas <span class="rc-arrow">→</span> Porto Alegre</span>
+          <span class="rc-price">R$8</span>
+        </a>
+        <a href="procurar-carona.html?origem=Alvorada&destino=Porto+Alegre" class="route-chip">
+          <span>Alvorada <span class="rc-arrow">→</span> Porto Alegre</span>
+          <span class="rc-price">R$15</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="section reveal" id="como-funciona">
+      <h2 class="sec-title">Como funciona</h2>
+      <div class="how-grid">
+        <div class="how-card">
+          <span class="how-icon">1</span>
+          <strong class="how-title">Crie sua conta</strong>
+          <p class="how-text">Cadastre-se com seus dados básicos e entre na comunidade de estudantes.</p>
+        </div>
+        <div class="how-card">
+          <span class="how-icon">2</span>
+          <strong class="how-title">Encontre uma rota</strong>
+          <p class="how-text">Use filtros simples para comparar horários, motoristas, vagas e valores.</p>
+        </div>
+        <div class="how-card">
+          <span class="how-icon">3</span>
+          <strong class="how-title">Reserve com segurança</strong>
+          <p class="how-text">Confirme sua vaga e acompanhe tudo pelo dashboard da plataforma.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="login-cta reveal">
+      <div class="lc-left">
+        <h2 class="lc-title">Teste a plataforma com a conta demo</h2>
+        <p class="lc-desc">Acesse o dashboard, reserve caronas e veja como a experiência fica depois do login.</p>
+        <div class="lc-btns">
+          <a href="login.html" class="btn btn-primary btn-lg">Entrar agora</a>
+          <a href="cadastro.html" class="btn btn-ghost btn-lg">Criar conta</a>
+        </div>
+      </div>
+      <div class="lc-right">
+        <div class="lc-avatars">
+          <div class="lc-av">AC</div>
+          <div class="lc-av orange">JS</div>
+          <div class="lc-av mid">PM</div>
+          <div class="lc-av">MS</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-top">
+      <div class="f-brand">
+        <a href="index.html" class="f-logo">
+          <img src="logo.png" alt="CESUCAR" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+          <span class="f-logo-fb">CESUCAR</span>
+        </a>
+        <p class="f-desc">Plataforma de caronas universitárias para organizar trajetos entre estudantes da CESUCA.</p>
+      </div>
+      <div class="f-col">
+        <strong class="f-col-title">Plataforma</strong>
+        <ul>
+          <li><a href="procurar-carona.html">Procurar carona</a></li>
+          <li><a href="dashboard.html">Dashboard</a></li>
+        </ul>
+      </div>
+      <div class="f-col">
+        <strong class="f-col-title">Conta</strong>
+        <ul>
+          <li><a href="login.html">Fazer login</a></li>
+          <li><a href="cadastro.html">Cadastrar</a></li>
+        </ul>
+      </div>
+      <div class="f-col">
+        <strong class="f-col-title">Rotas</strong>
+        <ul>
+          <li><a href="procurar-carona.html?origem=Cachoeirinha">Cachoeirinha → POA</a></li>
+          <li><a href="procurar-carona.html?origem=Gravataí">Gravataí → POA</a></li>
+          <li><a href="procurar-carona.html?origem=Canoas">Canoas → POA</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 CESUCAR — Centro Universitário CESUCA</span>
+      <span>Carona. Conexão. Comunidade.</span>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script>
+    function doSearch() {
+      const origem = document.getElementById("homeOrigem").value.trim();
+      const destino = document.getElementById("homeDestino").value.trim();
+      const params = new URLSearchParams();
+      if (origem) params.set("origem", origem);
+      if (destino) params.set("destino", destino);
+      window.location.href = "procurar-carona.html" + (params.toString() ? "?" + params : "");
+    }
+
+    document.querySelectorAll("[data-target]").forEach((counter) => {
+      const target = Number(counter.dataset.target);
+      let frame = 0;
+      const tick = () => {
+        frame += 1;
+        const progress = Math.min(frame / 45, 1);
+        counter.textContent = Math.floor(target * progress).toLocaleString("pt-BR") + "+";
+        if (progress < 1) requestAnimationFrame(tick);
+      };
+      tick();
+    });
+  </script>
+</body>
+</html>

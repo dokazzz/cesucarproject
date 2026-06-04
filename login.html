@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Entrar — CESUCAR</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="auth-page">
+  <div class="bg-mesh"></div>
+  <div class="bg-grid"></div>
+
+  <main class="auth-shell">
+    <section class="auth-card login-card">
+      <a href="index.html" class="auth-logo" aria-label="Página inicial">
+        <img src="logo.png" alt="CESUCAR" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <span class="navbar-logo-fallback">CESUCAR</span>
+      </a>
+
+      <h1 class="login-title">Bem-vindo de volta</h1>
+      <p class="login-sub">Entre com sua conta para acessar reservas, rotas e notificações.</p>
+
+      <div class="demo-hint">
+        <strong>Conta demo</strong>
+        Email: <b>admin@cesucar.com</b> · Senha: <b>123456</b>
+      </div>
+
+      <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
+        <div class="divider-row"><span>credenciais</span></div>
+
+        <div class="form-group">
+          <label class="form-label" for="email">E-mail <span class="req">*</span></label>
+          <input class="form-input" type="email" id="email" placeholder="seu@email.com" value="admin@cesucar.com" autocomplete="email" required />
+          <span class="form-error" id="err-email"></span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Senha <span class="req">*</span></label>
+          <div class="input-eye">
+            <input class="form-input" type="password" id="password" placeholder="Sua senha" value="123456" autocomplete="current-password" required />
+            <button type="button" class="eye-btn" id="eyeBtn" onclick="togglePwd()" aria-label="Mostrar senha">◐</button>
+          </div>
+          <span class="form-error" id="err-pw"></span>
+        </div>
+
+        <a href="#" class="forgot-link" onclick="forgotPwd(event)">Esqueci minha senha</a>
+
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn">Entrar</button>
+
+        <div class="signup-row">Não tem conta? <a href="cadastro.html">Cadastre-se grátis</a></div>
+      </form>
+    </section>
+
+    <p class="signup-row">
+      <a href="index.html">Voltar ao início</a>
+    </p>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    if (CESUCAR.isLoggedIn()) window.location.href = "dashboard.html";
+
+    function togglePwd() {
+      const input = document.getElementById("password");
+      const button = document.getElementById("eyeBtn");
+      const visible = input.type === "text";
+      input.type = visible ? "password" : "text";
+      button.textContent = visible ? "◐" : "●";
+      button.setAttribute("aria-label", visible ? "Mostrar senha" : "Ocultar senha");
+    }
+
+    function forgotPwd(event) {
+      event.preventDefault();
+      const email = document.getElementById("email").value.trim();
+      CESUCAR.modal({
+        icon: "↳",
+        title: "Recuperar senha",
+        body: email
+          ? `Enviaremos um link de redefinição para <strong>${email}</strong>.`
+          : "Informe seu e-mail antes de recuperar a senha.",
+        confirmLabel: email ? "Enviar link" : "Ok",
+        cancel: !!email,
+        onConfirm: () => email && CESUCAR.toast("Link enviado para " + email, "success")
+      });
+    }
+
+    async function handleLogin(event) {
+      event.preventDefault();
+      document.getElementById("err-email").textContent = "";
+      document.getElementById("err-pw").textContent = "";
+
+      const button = document.getElementById("loginBtn");
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!email) {
+        document.getElementById("err-email").textContent = "Informe seu e-mail.";
+        return;
+      }
+      if (!password) {
+        document.getElementById("err-pw").textContent = "Informe sua senha.";
+        return;
+      }
+
+      CESUCAR.showLoading(button, "Verificando...");
+      await new Promise((resolve) => setTimeout(resolve, 650));
+      const result = CESUCAR.login(email, password);
+      CESUCAR.hideLoading(button);
+
+      if (!result.ok) {
+        document.getElementById("err-pw").textContent = result.error;
+        CESUCAR.toast(result.error, "error");
+        return;
+      }
+
+      button.textContent = "Entrada confirmada";
+      CESUCAR.toast("Login realizado. Redirecionando...", "success", 1500);
+      setTimeout(() => window.location.href = "dashboard.html", 900);
+    }
+  </script>
+</body>
+</html>

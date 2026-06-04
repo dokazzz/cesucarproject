@@ -1,0 +1,460 @@
+(function () {
+  const KEY = "cesucar:";
+  const today = new Date().toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+
+  const demoUser = {
+    id: 1,
+    name: "Ana Costa",
+    email: "admin@cesucar.com",
+    curso: "Ciência da Computação",
+    cidade: "Cachoeirinha",
+    telefone: "(51) 99999-0000",
+    avatar: "AC",
+    rating: "4.9",
+    trips: 18,
+    role: "both"
+  };
+
+  const demoRides = [
+    {
+      id: 101,
+      driverId: 2,
+      driver: "João Silva",
+      driverAvatar: "JS",
+      driverRating: 4.9,
+      curso: "Engenharia de Software",
+      origem: "Cachoeirinha",
+      destino: "Porto Alegre",
+      data: today,
+      horario: "07:20",
+      veiculo: "Onix prata",
+      vagas: 3,
+      valor: 10
+    },
+    {
+      id: 102,
+      driverId: 3,
+      driver: "Pedro Martins",
+      driverAvatar: "PM",
+      driverRating: 4.8,
+      curso: "Administração",
+      origem: "Gravataí",
+      destino: "Porto Alegre",
+      data: today,
+      horario: "08:10",
+      veiculo: "HB20 branco",
+      vagas: 2,
+      valor: 12
+    },
+    {
+      id: 103,
+      driverId: 4,
+      driver: "Marina Souza",
+      driverAvatar: "MS",
+      driverRating: 5,
+      curso: "Direito",
+      origem: "Canoas",
+      destino: "Porto Alegre",
+      data: today,
+      horario: "18:30",
+      veiculo: "Argo vermelho",
+      vagas: 4,
+      valor: 8
+    },
+    {
+      id: 104,
+      driverId: 5,
+      driver: "Lucas Pereira",
+      driverAvatar: "LP",
+      driverRating: 4.7,
+      curso: "Sistemas de Informação",
+      origem: "Alvorada",
+      destino: "Porto Alegre",
+      data: today,
+      horario: "19:10",
+      veiculo: "Gol azul",
+      vagas: 3,
+      valor: 15
+    },
+    {
+      id: 105,
+      driverId: 6,
+      driver: "Bianca Rocha",
+      driverAvatar: "BR",
+      driverRating: 4.9,
+      curso: "Psicologia",
+      origem: "Porto Alegre",
+      destino: "Cachoeirinha",
+      data: tomorrow,
+      horario: "21:40",
+      veiculo: "Fit cinza",
+      vagas: 2,
+      valor: 10
+    }
+  ];
+
+  const demoNotifications = [
+    { id: 1, text: "João confirmou uma carona para hoje às 07:20.", time: "Agora", read: false },
+    { id: 2, text: "Marina publicou uma rota saindo de Canoas.", time: "2h atrás", read: false },
+    { id: 3, text: "Sua conta está verificada na comunidade CESUCA.", time: "Ontem", read: true }
+  ];
+
+  function read(name, fallback) {
+    try {
+      const raw = localStorage.getItem(KEY + name);
+      return raw === null ? fallback : JSON.parse(raw);
+    } catch {
+      return fallback;
+    }
+  }
+
+  function write(name, value) {
+    localStorage.setItem(KEY + name, JSON.stringify(value));
+    return value;
+  }
+
+  function normalize(value) {
+    return String(value || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim();
+  }
+
+  function seed() {
+    if (!read("rides", null)) write("rides", demoRides);
+    if (!read("notifications", null)) write("notifications", demoNotifications);
+  }
+
+  function getStoredRides() {
+    seed();
+    return read("rides", []);
+  }
+
+  function getReservations() {
+    return read("reservations", []);
+  }
+
+  function enrichRide(ride) {
+    const reservedCount = getReservations().filter((r) => r.rideId === ride.id).length;
+    return {
+      ...ride,
+      vagasDisp: Math.max(0, ride.vagas - reservedCount)
+    };
+  }
+
+  function getRides(filters = {}) {
+    let rides = getStoredRides().map(enrichRide);
+
+    if (filters.origem) {
+      const q = normalize(filters.origem);
+      rides = rides.filter((ride) => normalize(ride.origem).includes(q));
+    }
+
+    if (filters.destino) {
+      const q = normalize(filters.destino);
+      rides = rides.filter((ride) => normalize(ride.destino).includes(q));
+    }
+
+    if (filters.data) {
+      rides = rides.filter((ride) => ride.data === filters.data);
+    }
+
+    return rides.sort((a, b) => a.horario.localeCompare(b.horario));
+  }
+
+  function isLoggedIn() {
+    return !!read("loggedIn", false);
+  }
+
+  function currentUser() {
+    return isLoggedIn() ? read("currentUser", demoUser) : null;
+  }
+
+  function requireAuth() {
+    if (!isLoggedIn()) {
+      window.location.href = "login.html";
+    }
+  }
+
+  function login(email, password) {
+    const saved = read("currentUser", null);
+    const okDemo = normalize(email) === "admin@cesucar.com" && password === "123456";
+    const okSaved = saved && normalize(saved.email) === normalize(email) && password.length >= 6;
+
+    if (!okDemo && !okSaved) {
+      return { ok: false, error: "E-mail ou senha inválidos." };
+    }
+
+    write("currentUser", okSaved ? saved : demoUser);
+    write("loggedIn", true);
+    return { ok: true };
+  }
+
+  function logout(event) {
+    if (event) event.preventDefault();
+    write("loggedIn", false);
+    toast("Você saiu da plataforma.", "info");
+    setTimeout(() => {
+      window.location.href = "login.html";
+    }, 500);
+  }
+
+  function reserveRide(id) {
+    const ride = getRides().find((item) => item.id === id);
+    if (!ride) return { ok: false, error: "Carona não encontrada." };
+    if (ride.vagasDisp <= 0) return { ok: false, error: "Essa carona está sem vagas." };
+
+    const reservations = getReservations();
+    if (reservations.some((item) => item.rideId === id)) {
+      return { ok: false, error: "Você já reservou essa carona." };
+    }
+
+    reservations.push({
+      id: Date.now(),
+      rideId: id,
+      createdAt: new Date().toISOString(),
+      ride
+    });
+    write("reservations", reservations);
+    toast("Reserva confirmada.", "success");
+    return { ok: true };
+  }
+
+  function cancelReservation(rideId) {
+    write("reservations", getReservations().filter((item) => item.rideId !== rideId));
+    toast("Reserva cancelada.", "info");
+  }
+
+  function getNotifications() {
+    seed();
+    return read("notifications", []);
+  }
+
+  function markAllRead() {
+    write("notifications", getNotifications().map((item) => ({ ...item, read: true })));
+    updateNotifBadge();
+  }
+
+  function updateNotifBadge() {
+    const count = getNotifications().filter((item) => !item.read).length;
+    document.querySelectorAll("#notifBadge, .notif-badge").forEach((badge) => {
+      badge.textContent = count;
+      badge.style.display = count ? "grid" : "none";
+    });
+  }
+
+  function toast(message, type = "info", duration = 3000) {
+    let stack = document.querySelector(".toast-stack");
+    if (!stack) {
+      stack = document.createElement("div");
+      stack.className = "toast-stack";
+      document.body.appendChild(stack);
+    }
+
+    const item = document.createElement("div");
+    item.className = "toast " + type;
+    item.textContent = message;
+    stack.appendChild(item);
+
+    window.setTimeout(() => {
+      item.style.opacity = "0";
+      item.style.transform = "translateY(8px)";
+      window.setTimeout(() => item.remove(), 180);
+    }, duration);
+  }
+
+  function modal(options) {
+    const config = {
+      icon: "!",
+      title: "",
+      body: "",
+      confirmLabel: "Confirmar",
+      cancelLabel: "Cancelar",
+      cancel: true,
+      onConfirm: null,
+      ...options
+    };
+
+    const backdrop = document.createElement("div");
+    backdrop.className = "modal-backdrop";
+    backdrop.innerHTML = `
+      <div class="modal-card" role="dialog" aria-modal="true">
+        <div class="modal-icon">${config.icon}</div>
+        <h2 class="modal-title">${config.title}</h2>
+        <div class="modal-body">${config.body}</div>
+        <div class="modal-actions">
+          ${config.cancel ? `<button class="btn btn-ghost btn-sm" data-modal-cancel>${config.cancelLabel}</button>` : ""}
+          <button class="btn btn-primary btn-sm" data-modal-confirm>${config.confirmLabel}</button>
+        </div>
+      </div>
+    `;
+
+    function close() {
+      backdrop.remove();
+    }
+
+    backdrop.addEventListener("click", (event) => {
+      if (event.target === backdrop || event.target.closest("[data-modal-cancel]")) close();
+      if (event.target.closest("[data-modal-confirm]")) {
+        close();
+        if (typeof config.onConfirm === "function") config.onConfirm();
+      }
+    });
+
+    document.body.appendChild(backdrop);
+  }
+
+  function showLoading(button, label = "Carregando...") {
+    if (!button) return;
+    button.dataset.originalHtml = button.innerHTML;
+    button.classList.add("is-loading");
+    button.disabled = true;
+    button.textContent = label;
+  }
+
+  function hideLoading(button) {
+    if (!button) return;
+    button.classList.remove("is-loading");
+    button.disabled = false;
+    if (button.dataset.originalHtml) button.innerHTML = button.dataset.originalHtml;
+  }
+
+  function applyTheme(theme) {
+    const next = theme === "dark" ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    write("theme", next);
+    document.querySelectorAll(".theme-toggle, #themeBtn").forEach((control) => {
+      control.textContent = next === "dark" ? "☾" : "☀";
+      control.setAttribute("role", "button");
+      control.setAttribute("aria-label", next === "dark" ? "Usar tema claro" : "Usar tema escuro");
+      control.tabIndex = 0;
+    });
+    return next;
+  }
+
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute("data-theme") || "light";
+    return applyTheme(current === "dark" ? "light" : "dark");
+  }
+
+  function setupThemeControls() {
+    applyTheme(read("theme", document.documentElement.getAttribute("data-theme") || "light"));
+    document.querySelectorAll(".theme-toggle, #themeBtn").forEach((control) => {
+      control.addEventListener("click", toggleTheme);
+      control.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          toggleTheme();
+        }
+      });
+    });
+  }
+
+  function setupMobileDrawer() {
+    const button = document.getElementById("hamburger") || document.getElementById("ham");
+    const drawer = document.getElementById("mobileDrawer") || document.getElementById("drawer");
+    if (!button || !drawer) return;
+
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      drawer.classList.toggle("open");
+    });
+
+    drawer.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", () => drawer.classList.remove("open"));
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest("#hamburger, #ham") && !event.target.closest("#mobileDrawer, #drawer")) {
+        drawer.classList.remove("open");
+      }
+    });
+  }
+
+  function setupUserUI() {
+    const user = currentUser();
+    document.querySelectorAll("[data-user-name]").forEach((el) => {
+      el.textContent = user ? user.name.split(" ")[0] : "Visitante";
+    });
+    document.querySelectorAll("[data-user-avatar]").forEach((el) => {
+      el.textContent = user ? user.avatar || initials(user.name) : "CE";
+    });
+    document.querySelectorAll("[data-logout]").forEach((el) => el.addEventListener("click", logout));
+    updateNotifBadge();
+  }
+
+  function initials(name) {
+    return String(name || "CE")
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  }
+
+  function setupReveal() {
+    const nodes = document.querySelectorAll(".reveal");
+    if (!nodes.length) return;
+    if (!("IntersectionObserver" in window)) {
+      nodes.forEach((node) => node.classList.add("visible"));
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry, index) => {
+          if (!entry.isIntersecting) return;
+          window.setTimeout(() => entry.target.classList.add("visible"), index * 45);
+          observer.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.08 }
+    );
+
+    nodes.forEach((node) => observer.observe(node));
+  }
+
+  function init() {
+    seed();
+    setupThemeControls();
+    setupMobileDrawer();
+    setupUserUI();
+    setupReveal();
+  }
+
+  window.CESUCAR = {
+    _get: read,
+    _set: write,
+    today,
+    tomorrow,
+    currentUser,
+    isLoggedIn,
+    requireAuth,
+    login,
+    logout,
+    getRides,
+    getReservations,
+    reserveRide,
+    cancelReservation,
+    getNotifications,
+    markAllRead,
+    updateNotifBadge,
+    toast,
+    modal,
+    showLoading,
+    hideLoading,
+    toggleTheme,
+    applyTheme,
+    initials,
+    init
+  };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();

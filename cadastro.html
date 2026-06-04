@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastro — CESUCAR</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="auth-page">
+  <div class="bg-mesh"></div>
+  <div class="bg-grid"></div>
+
+  <main class="cad-wrap">
+    <section class="auth-card cad-card">
+      <a href="index.html" class="auth-logo" aria-label="Página inicial">
+        <img src="logo.png" alt="CESUCAR" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <span class="navbar-logo-fallback">CESUCAR</span>
+      </a>
+
+      <h1 class="cad-title">Crie sua conta</h1>
+      <p class="cad-sub">Organize suas caronas e acompanhe tudo em um só lugar.</p>
+
+      <div class="steps-bar" aria-label="Etapas do cadastro">
+        <div class="step-dot active" id="sd1"></div>
+        <div class="step-dot" id="sd2"></div>
+        <div class="step-dot" id="sd3"></div>
+      </div>
+
+      <form id="cadForm" onsubmit="handleCad(event)" novalidate>
+        <section class="form-step" id="step1">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="nome">Nome <span class="req">*</span></label>
+              <input class="form-input" type="text" id="nome" placeholder="Seu nome completo" autocomplete="name" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="curso">Curso <span class="req">*</span></label>
+              <select class="form-select" id="curso" required>
+                <option value="">Selecione</option>
+                <option>Administração</option>
+                <option>Ciência da Computação</option>
+                <option>Direito</option>
+                <option>Engenharia de Software</option>
+                <option>Sistemas de Informação</option>
+                <option>Pedagogia</option>
+                <option>Psicologia</option>
+                <option>Enfermagem</option>
+                <option>Outro</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="cidade">Cidade <span class="req">*</span></label>
+            <select class="form-select" id="cidade" required>
+              <option value="">Selecione sua cidade</option>
+              <option>Cachoeirinha</option>
+              <option>Gravataí</option>
+              <option>Canoas</option>
+              <option>Alvorada</option>
+              <option>Porto Alegre</option>
+              <option>Viamão</option>
+              <option>Sapucaia do Sul</option>
+              <option>São Leopoldo</option>
+              <option>Outra</option>
+            </select>
+          </div>
+
+          <button type="button" class="btn btn-blue btn-block" onclick="nextStep(2)">Continuar</button>
+        </section>
+
+        <section class="form-step" id="step2" hidden>
+          <div class="form-group">
+            <label class="form-label" for="email">E-mail <span class="req">*</span></label>
+            <input class="form-input" type="email" id="email" placeholder="seu@email.com" autocomplete="email" required />
+            <span class="form-hint">Pode ser e-mail pessoal ou institucional.</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="telefone">Telefone <span class="req">*</span></label>
+            <input class="form-input" type="tel" id="telefone" placeholder="(51) 99999-0000" maxlength="15" required />
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" onclick="prevStep(1)">Voltar</button>
+            <button type="button" class="btn btn-blue" onclick="nextStep(3)">Continuar</button>
+          </div>
+        </section>
+
+        <section class="form-step" id="step3" hidden>
+          <div class="form-group">
+            <label class="form-label" for="senha">Senha <span class="req">*</span></label>
+            <input class="form-input" type="password" id="senha" placeholder="Mínimo 6 caracteres" required minlength="6" />
+            <div class="password-strength">
+              <div class="step-dot" id="sb1"></div>
+              <div class="step-dot" id="sb2"></div>
+              <div class="step-dot" id="sb3"></div>
+              <div class="step-dot" id="sb4"></div>
+            </div>
+            <span class="form-hint" id="strength-label">Digite a senha</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="senha2">Confirmar senha <span class="req">*</span></label>
+            <input class="form-input" type="password" id="senha2" placeholder="Repita a senha" required />
+            <span class="form-error" id="err-senha2"></span>
+          </div>
+
+          <div class="terms-row">
+            <input type="checkbox" id="terms" required />
+            <label for="terms">Concordo com os <a href="#">Termos de Uso</a> e a <a href="#">Política de Privacidade</a>.</label>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" onclick="prevStep(2)">Voltar</button>
+            <button type="submit" class="btn btn-primary" id="cadBtn">Criar conta</button>
+          </div>
+        </section>
+      </form>
+
+      <div class="login-row mt-18">Já tem conta? <a href="login.html">Entrar</a></div>
+    </section>
+
+    <p class="signup-row">
+      <a href="index.html">Voltar ao início</a>
+    </p>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script>
+    let currentStep = 1;
+
+    function setStep(next) {
+      document.getElementById("step" + currentStep).hidden = true;
+      document.getElementById("sd" + currentStep).classList.remove("active");
+      currentStep = next;
+      document.getElementById("step" + currentStep).hidden = false;
+      document.getElementById("sd" + currentStep).classList.add("active");
+
+      for (let index = 1; index <= 3; index += 1) {
+        const dot = document.getElementById("sd" + index);
+        dot.classList.toggle("done", index < currentStep);
+      }
+    }
+
+    function nextStep(step) {
+      if (step === 2) {
+        if (!document.getElementById("nome").value.trim()) return CESUCAR.toast("Informe seu nome.", "error");
+        if (!document.getElementById("curso").value) return CESUCAR.toast("Selecione seu curso.", "error");
+        if (!document.getElementById("cidade").value) return CESUCAR.toast("Selecione sua cidade.", "error");
+      }
+
+      if (step === 3) {
+        const email = document.getElementById("email").value.trim();
+        const phone = document.getElementById("telefone").value.trim();
+        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return CESUCAR.toast("Informe um e-mail válido.", "error");
+        if (!phone || phone.length < 14) return CESUCAR.toast("Informe um telefone válido.", "error");
+      }
+
+      setStep(step);
+    }
+
+    function prevStep(step) {
+      setStep(step);
+    }
+
+    document.getElementById("telefone").addEventListener("input", function () {
+      let value = this.value.replace(/\D/g, "");
+      if (value.length <= 10) value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3");
+      else value = value.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3");
+      this.value = value.trim().replace(/-$/, "");
+    });
+
+    document.getElementById("senha").addEventListener("input", function () {
+      const value = this.value;
+      let score = 0;
+      if (value.length >= 6) score += 1;
+      if (value.length >= 10) score += 1;
+      if (/[A-Z]/.test(value) && /[0-9]/.test(value)) score += 1;
+      if (/[^A-Za-z0-9]/.test(value)) score += 1;
+
+      const colors = ["#dc4c4c", "#f4b942", "#2f9e83", "#167a65"];
+      const labels = ["fraca", "razoável", "boa", "forte"];
+
+      for (let index = 1; index <= 4; index += 1) {
+        document.getElementById("sb" + index).style.background =
+          index <= score ? colors[score - 1] : "var(--glass-border)";
+      }
+
+      document.getElementById("strength-label").textContent = score ? "Senha " + labels[score - 1] : "Digite a senha";
+    });
+
+    async function handleCad(event) {
+      event.preventDefault();
+      const password = document.getElementById("senha").value;
+      const confirm = document.getElementById("senha2").value;
+      const error = document.getElementById("err-senha2");
+      error.textContent = "";
+
+      if (password.length < 6) return CESUCAR.toast("A senha precisa ter pelo menos 6 caracteres.", "error");
+      if (password !== confirm) {
+        error.textContent = "As senhas não coincidem.";
+        return;
+      }
+      if (!document.getElementById("terms").checked) return CESUCAR.toast("Aceite os termos para continuar.", "error");
+
+      const button = document.getElementById("cadBtn");
+      CESUCAR.showLoading(button, "Criando conta...");
+      await new Promise((resolve) => setTimeout(resolve, 800));
+
+      const name = document.getElementById("nome").value.trim();
+      const userData = {
+        id: Date.now(),
+        name,
+        email: document.getElementById("email").value.trim(),
+        curso: document.getElementById("curso").value,
+        cidade: document.getElementById("cidade").value,
+        telefone: document.getElementById("telefone").value,
+        avatar: CESUCAR.initials(name),
+        rating: "5.0",
+        trips: 0,
+        role: "both"
+      };
+
+      CESUCAR._set("currentUser", userData);
+      CESUCAR._set("loggedIn", true);
+      CESUCAR.hideLoading(button);
+      button.textContent = "Conta criada";
+      CESUCAR.toast("Conta criada com sucesso.", "success", 1800);
+      setTimeout(() => window.location.href = "dashboard.html", 1000);
+    }
+  </script>
+</body>
+</html>

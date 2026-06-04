@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Procurar carona — CESUCAR</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="app-page">
+  <div class="bg-mesh"></div>
+  <div class="bg-grid"></div>
+
+  <nav class="navbar">
+    <a href="index.html" class="navbar-logo">
+      <img src="logo.png" alt="CESUCAR" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+      <span class="navbar-logo-fallback">CESUCAR</span>
+    </a>
+    <ul class="navbar-links">
+      <li><a href="index.html">Início</a></li>
+      <li><a href="procurar-carona.html" class="active">Procurar</a></li>
+      <li><a href="dashboard.html">Dashboard</a></li>
+    </ul>
+    <div class="navbar-right">
+      <div class="theme-toggle"></div>
+      <a class="nav-notif-btn" href="dashboard.html" aria-label="Notificações">○<span class="notif-badge" id="notifBadge">0</span></a>
+      <div class="nav-user-chip">
+        <div class="nav-user-avatar" data-user-avatar>CE</div>
+        <span data-user-name>Visitante</span>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Abrir menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="mobile-drawer" id="mobileDrawer">
+    <a href="index.html">Início</a>
+    <a href="procurar-carona.html">Procurar carona</a>
+    <a href="dashboard.html">Dashboard</a>
+    <div class="drawer-btns">
+      <a href="login.html" class="btn btn-ghost">Entrar</a>
+      <a href="cadastro.html" class="btn btn-primary">Cadastrar</a>
+    </div>
+  </div>
+
+  <main class="page-body">
+    <header class="page-head reveal">
+      <div class="section-tag">Procurar</div>
+      <h1 class="page-title">Encontre sua <span class="accent">carona ideal</span></h1>
+      <p>Filtre por rota, data e horário para comparar motoristas disponíveis.</p>
+    </header>
+
+    <section class="search-panel reveal" aria-label="Filtros de busca">
+      <div class="search-row">
+        <div class="form-group">
+          <label class="form-label" for="f-origem">Origem</label>
+          <select class="form-select" id="f-origem">
+            <option value="">Qualquer origem</option>
+            <option>Cachoeirinha</option>
+            <option>Gravataí</option>
+            <option>Canoas</option>
+            <option>Alvorada</option>
+            <option>Porto Alegre</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f-destino">Destino</label>
+          <select class="form-select" id="f-destino">
+            <option value="">Qualquer destino</option>
+            <option>Porto Alegre</option>
+            <option>Cachoeirinha</option>
+            <option>Gravataí</option>
+            <option>Canoas</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f-data">Data</label>
+          <input class="form-input" type="date" id="f-data" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="f-horario">Horário</label>
+          <select class="form-select" id="f-horario">
+            <option value="">Qualquer</option>
+            <option value="manha">Manhã</option>
+            <option value="tarde">Tarde</option>
+            <option value="noite">Noite</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="doSearch()">Buscar</button>
+      </div>
+
+      <div class="filter-row">
+        <span class="form-label">Filtros rápidos</span>
+        <button class="filter-chip active" type="button" onclick="toggleChip(this, 'all')">Todos</button>
+        <button class="filter-chip" type="button" onclick="toggleChip(this, 'vagas')">Com vagas</button>
+        <button class="filter-chip" type="button" onclick="toggleChip(this, 'barato')">Mais barato</button>
+        <button class="filter-chip" type="button" onclick="toggleChip(this, 'rating')">Melhor avaliado</button>
+      </div>
+    </section>
+
+    <div class="results-header reveal">
+      <div class="results-count" id="resultsCount">Buscando caronas...</div>
+      <select class="form-select" id="sortBy" onchange="doSearch()" aria-label="Ordenar resultados">
+        <option value="horario">Ordenar por horário</option>
+        <option value="preco">Menor preço</option>
+        <option value="rating">Melhor avaliado</option>
+      </select>
+    </div>
+
+    <section id="resultsList" aria-label="Resultados de caronas"></section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-bottom">
+      <span>© 2026 CESUCAR</span>
+      <a href="index.html">Página inicial</a>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script>
+    document.getElementById("f-data").value = CESUCAR.today;
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("origem")) document.getElementById("f-origem").value = params.get("origem");
+    if (params.get("destino")) document.getElementById("f-destino").value = params.get("destino");
+    if (params.get("data")) document.getElementById("f-data").value = params.get("data");
+
+    let activeFilter = "all";
+
+    function toggleChip(element, type) {
+      document.querySelectorAll(".filter-chip").forEach((chip) => chip.classList.remove("active"));
+      element.classList.add("active");
+      activeFilter = type;
+      doSearch();
+    }
+
+    function doSearch() {
+      const origem = document.getElementById("f-origem").value;
+      const destino = document.getElementById("f-destino").value;
+      const data = document.getElementById("f-data").value;
+      const horario = document.getElementById("f-horario").value;
+      const sort = document.getElementById("sortBy").value;
+
+      let rides = CESUCAR.getRides({
+        origem: origem || undefined,
+        destino: destino || undefined,
+        data: data || undefined
+      });
+
+      if (horario) {
+        rides = rides.filter((ride) => {
+          const hour = Number(ride.horario.slice(0, 2));
+          if (horario === "manha") return hour >= 6 && hour < 12;
+          if (horario === "tarde") return hour >= 12 && hour < 18;
+          return hour >= 18 && hour < 23;
+        });
+      }
+
+      if (activeFilter === "vagas") rides = rides.filter((ride) => ride.vagasDisp > 0);
+      if (activeFilter === "barato") rides.sort((a, b) => a.valor - b.valor);
+      if (activeFilter === "rating") rides.sort((a, b) => b.driverRating - a.driverRating);
+      if (sort === "preco") rides.sort((a, b) => a.valor - b.valor);
+      if (sort === "rating") rides.sort((a, b) => b.driverRating - a.driverRating);
+
+      document.getElementById("resultsCount").textContent =
+        `${rides.length} carona${rides.length !== 1 ? "s" : ""} encontrada${rides.length !== 1 ? "s" : ""}`;
+      renderResults(rides);
+    }
+
+    function renderResults(rides) {
+      const container = document.getElementById("resultsList");
+      const reservedIds = CESUCAR.getReservations().map((reservation) => reservation.rideId);
+
+      if (!rides.length) {
+        container.innerHTML = `
+          <div class="empty-state reveal visible">
+            <span class="empty-state-icon">⌕</span>
+            <div class="empty-state-title">Nenhuma carona encontrada</div>
+            <p>Ajuste os filtros ou volte mais tarde para conferir novas rotas.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = rides.map((ride) => {
+        const reserved = reservedIds.includes(ride.id);
+        const disabled = ride.vagasDisp <= 0;
+        const action = reserved
+          ? `<span class="badge badge-green">Reservado</span><button class="btn btn-ghost btn-sm" onclick="cancelRes(${ride.id})">Cancelar</button>`
+          : disabled
+            ? `<span class="badge badge-gray">Esgotado</span>`
+            : `<button class="btn btn-primary btn-sm" onclick="reservar(${ride.id})">Reservar vaga</button>`;
+
+        return `
+          <article class="driver-card reveal visible">
+            <div class="avatar avatar-md">${ride.driverAvatar}</div>
+            <div class="driver-details">
+              <div class="driver-name">${ride.driver}</div>
+              <div class="driver-curso">${ride.curso}</div>
+              <div class="driver-route">${ride.origem} <span class="arrow">→</span> ${ride.destino} · <strong>${ride.horario}</strong></div>
+              <div class="driver-tags">
+                <span class="badge badge-gray">${ride.data}</span>
+                <span class="badge badge-blue">${ride.veiculo}</span>
+                <span class="badge badge-gray">${ride.vagasDisp}/${ride.vagas} vagas</span>
+                <span class="badge badge-orange">${ride.driverRating} de avaliação</span>
+              </div>
+            </div>
+            <div class="driver-actions">
+              <div>
+                <div class="price-big">R$${ride.valor}</div>
+                <div class="price-sub">por pessoa</div>
+              </div>
+              ${action}
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    function reservar(id) {
+      if (!CESUCAR.isLoggedIn()) {
+        CESUCAR.modal({
+          icon: "↳",
+          title: "Entre para reservar",
+          body: "Faça login para confirmar sua vaga e acompanhar a reserva pelo dashboard.",
+          confirmLabel: "Ir para login",
+          onConfirm: () => window.location.href = "login.html"
+        });
+        return;
+      }
+
+      const ride = CESUCAR.getRides().find((item) => item.id === id);
+      CESUCAR.modal({
+        icon: "✓",
+        title: "Confirmar reserva",
+        body: `<strong>${ride.driver}</strong><br>${ride.origem} → ${ride.destino} às <strong>${ride.horario}</strong><br><br>Valor: <strong>R$${ride.valor}</strong> por pessoa`,
+        confirmLabel: "Confirmar",
+        onConfirm: () => {
+          const result = CESUCAR.reserveRide(id);
+          result.ok ? doSearch() : CESUCAR.toast(result.error, "error");
+        }
+      });
+    }
+
+    function cancelRes(id) {
+      CESUCAR.modal({
+        icon: "!",
+        title: "Cancelar reserva",
+        body: "Deseja cancelar esta reserva?",
+        confirmLabel: "Cancelar reserva",
+        onConfirm: () => {
+          CESUCAR.cancelReservation(id);
+          doSearch();
+        }
+      });
+    }
+
+    doSearch();
+  </script>
+</body>
+</html>

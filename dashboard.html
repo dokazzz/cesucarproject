@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — CESUCAR</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="app-page">
+  <div class="bg-mesh"></div>
+  <div class="bg-grid"></div>
+
+  <nav class="navbar">
+    <a href="index.html" class="navbar-logo">
+      <img src="logo.png" alt="CESUCAR" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+      <span class="navbar-logo-fallback">CESUCAR</span>
+    </a>
+    <ul class="navbar-links">
+      <li><a href="index.html">Início</a></li>
+      <li><a href="dashboard.html" class="active">Dashboard</a></li>
+      <li><a href="procurar-carona.html">Procurar</a></li>
+    </ul>
+    <div class="navbar-right">
+      <div class="theme-toggle"></div>
+      <a class="nav-notif-btn" id="notifBtn" href="#" aria-label="Notificações">○<span class="notif-badge" id="notifBadge">0</span></a>
+      <div class="nav-user-chip" id="userChipBtn">
+        <div class="nav-user-avatar" data-user-avatar>CE</div>
+        <span data-user-name>Usuário</span>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Abrir menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="notif-panel" id="notifPanel">
+    <div class="section-title">
+      <span class="dot"></span>
+      Notificações
+      <a href="#" onclick="markAllRead(event)" class="ec-link">Marcar lidas</a>
+    </div>
+    <div id="notifList"></div>
+  </div>
+
+  <div class="user-menu" id="userMenu">
+    <div class="user-menu-header">
+      <div class="user-menu-name" data-user-name>Usuário</div>
+      <div class="user-menu-email" id="userEmail">email@cesucar.com</div>
+    </div>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="procurar-carona.html">Procurar carona</a>
+    <a href="#" data-logout>Sair</a>
+  </div>
+
+  <div class="mobile-drawer" id="mobileDrawer">
+    <a href="index.html">Início</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="procurar-carona.html">Procurar carona</a>
+    <div class="drawer-btns">
+      <a href="#" data-logout class="btn btn-ghost">Sair</a>
+    </div>
+  </div>
+
+  <main class="page-body">
+    <header class="dash-greeting reveal">
+      <h1>Olá, <span id="greetName">Estudante</span></h1>
+      <p id="greetSub">Veja suas reservas, rotas disponíveis e notificações recentes.</p>
+    </header>
+
+    <section class="dash-grid reveal" aria-label="Indicadores">
+      <article class="kpi">
+        <span class="kpi-icon">▦</span>
+        <div class="kpi-val" id="kpiReservas">0</div>
+        <div class="kpi-label">Reservas ativas</div>
+        <div class="kpi-trend" id="kpiReservasTrend">Nenhuma ativa</div>
+      </article>
+      <article class="kpi">
+        <span class="kpi-icon">★</span>
+        <div class="kpi-val" id="kpiRating">4.9</div>
+        <div class="kpi-label">Sua avaliação</div>
+        <div class="kpi-trend">Comunidade confiável</div>
+      </article>
+      <article class="kpi">
+        <span class="kpi-icon">R$</span>
+        <div class="kpi-val" id="kpiEconomia">R$0</div>
+        <div class="kpi-label">Economia estimada</div>
+        <div class="kpi-trend" id="kpiEconomiaTrend"></div>
+      </article>
+      <article class="kpi">
+        <span class="kpi-icon">CO₂</span>
+        <div class="kpi-val" id="kpiCO2">0kg</div>
+        <div class="kpi-label">CO₂ evitado</div>
+        <div class="kpi-trend">Impacto positivo</div>
+      </article>
+    </section>
+
+    <section class="main-grid">
+      <div>
+        <div class="section-title reveal"><span class="dot"></span>Caronas disponíveis hoje</div>
+        <div id="ridesList"></div>
+        <a href="procurar-carona.html" class="btn btn-ghost btn-block reveal">Ver todas as caronas</a>
+
+        <div class="reveal mt-28">
+          <div class="section-title"><span class="dot"></span>Minhas reservas</div>
+          <div id="myReservations"></div>
+        </div>
+      </div>
+
+      <aside>
+        <div class="section-title reveal"><span class="dot"></span>Ações rápidas</div>
+        <div class="quick-actions reveal">
+          <a href="procurar-carona.html" class="qa-btn"><span class="qa-btn-icon">⌕</span><span>Procurar</span></a>
+          <a href="index.html" class="qa-btn"><span class="qa-btn-icon">⌂</span><span>Início</span></a>
+          <a href="#" class="qa-btn" onclick="shareApp(event)"><span class="qa-btn-icon">↗</span><span>Compartilhar</span></a>
+          <a href="#" class="qa-btn" data-logout><span class="qa-btn-icon">↳</span><span>Sair</span></a>
+        </div>
+
+        <div class="side-card reveal">
+          <div class="section-title"><span class="dot"></span>Atividade recente</div>
+          <div id="activityList"></div>
+        </div>
+
+        <div class="side-card reveal">
+          <div class="section-title"><span class="dot"></span>Comunidade</div>
+          <p class="ec-desc">Mais de 1.200 estudantes já participam das rotas compartilhadas da CESUCA.</p>
+          <a href="procurar-carona.html" class="btn btn-blue btn-block mt-14">Explorar rotas</a>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-bottom">
+      <span>© 2026 CESUCAR — Centro Universitário CESUCA</span>
+      <a href="index.html">Página inicial</a>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script>
+    CESUCAR.requireAuth();
+
+    const user = CESUCAR.currentUser();
+    if (user) {
+      const firstName = user.name.split(" ")[0];
+      const hour = new Date().getHours();
+      const greet = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+
+      document.getElementById("greetName").textContent = firstName;
+      document.getElementById("userEmail").textContent = user.email || "";
+      document.getElementById("greetSub").textContent = `${greet}. Veja suas reservas, rotas disponíveis e notificações recentes.`;
+    }
+
+    function updateKPIs() {
+      const reservations = CESUCAR.getReservations();
+      const economy = reservations.reduce((sum, item) => sum + (item.ride?.valor || 0), 0) * 3;
+      const co2 = (reservations.length * 2.4).toFixed(1);
+
+      document.getElementById("kpiReservas").textContent = reservations.length;
+      document.getElementById("kpiReservasTrend").textContent =
+        reservations.length ? `${reservations.length} ativa${reservations.length > 1 ? "s" : ""}` : "Nenhuma ativa";
+      document.getElementById("kpiEconomia").textContent = "R$" + economy;
+      document.getElementById("kpiEconomiaTrend").textContent = economy ? "Estimativa mensal" : "";
+      document.getElementById("kpiCO2").textContent = co2 + "kg";
+      if (user) document.getElementById("kpiRating").textContent = user.rating || "5.0";
+    }
+
+    function renderRides() {
+      const rides = CESUCAR.getRides({ data: CESUCAR.today });
+      const container = document.getElementById("ridesList");
+
+      if (!rides.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <span class="empty-state-icon">⌕</span>
+            <div class="empty-state-title">Sem caronas hoje</div>
+            <p>Procure outros dias ou volte mais tarde.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = rides.slice(0, 4).map((ride) => `
+        <article class="ride-card" onclick="quickReserve(${ride.id})">
+          <div class="avatar avatar-md">${ride.driverAvatar}</div>
+          <div class="ride-info">
+            <div class="ride-route">${ride.origem} <span class="arrow">→</span> ${ride.destino}</div>
+            <div class="driver-mini">
+              <span class="badge badge-orange">${ride.driverRating}</span>
+              <span class="ride-meta">${ride.driver} · ${ride.horario}</span>
+            </div>
+            <div class="ride-meta">${ride.veiculo} · ${ride.vagasDisp} vaga${ride.vagasDisp !== 1 ? "s" : ""} disponível${ride.vagasDisp !== 1 ? "is" : ""}</div>
+          </div>
+          <div class="ride-price">R$${ride.valor}</div>
+        </article>
+      `).join("");
+    }
+
+    function renderMyReservations() {
+      const reservations = CESUCAR.getReservations();
+      const container = document.getElementById("myReservations");
+
+      if (!reservations.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <span class="empty-state-icon">▦</span>
+            <div class="empty-state-title">Nenhuma reserva ativa</div>
+            <p>Escolha uma carona disponível para começar.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = reservations.map((reservation) => `
+        <article class="ride-card">
+          <div class="ride-info">
+            <div class="ride-route">${reservation.ride?.origem || "Origem"} <span class="arrow">→</span> ${reservation.ride?.destino || "Destino"}</div>
+            <div class="ride-meta">${reservation.ride?.horario || ""} · ${reservation.ride?.driver || ""}</div>
+          </div>
+          <span class="badge badge-green">Confirmado</span>
+          <button class="btn btn-ghost btn-sm" onclick="cancelRes(${reservation.rideId}, event)">Cancelar</button>
+        </article>
+      `).join("");
+    }
+
+    function renderActivity() {
+      const activities = [
+        { icon: "✓", cls: "green", text: "Sua conta está ativa e verificada.", time: "Agora" },
+        { icon: "★", cls: "orange", text: "A comunidade mantém avaliação média de 4.9.", time: "2h atrás" },
+        { icon: "⌕", cls: "blue", text: "Novas rotas para Porto Alegre foram publicadas.", time: "Hoje" }
+      ];
+
+      document.getElementById("activityList").innerHTML = activities.map((activity) => `
+        <div class="activity-item">
+          <div class="activity-icon ${activity.cls}">${activity.icon}</div>
+          <div>
+            <div class="activity-text">${activity.text}</div>
+            <div class="activity-time">${activity.time}</div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function renderNotifs() {
+      const notifications = CESUCAR.getNotifications();
+      document.getElementById("notifList").innerHTML = notifications.map((notification) => `
+        <div class="notif-item">
+          <span class="notif-dot ${notification.read ? "read" : ""}"></span>
+          <div>
+            <div class="activity-text">${notification.text}</div>
+            <div class="activity-time">${notification.time}</div>
+          </div>
+        </div>
+      `).join("") || `<p class="ec-desc">Sem notificações.</p>`;
+      CESUCAR.updateNotifBadge();
+    }
+
+    function quickReserve(id) {
+      const ride = CESUCAR.getRides().find((item) => item.id === id);
+      if (!ride) return;
+
+      CESUCAR.modal({
+        icon: "✓",
+        title: "Reservar carona",
+        body: `<strong>${ride.driver}</strong><br>${ride.origem} → ${ride.destino} às ${ride.horario}<br><br>Valor: <strong>R$${ride.valor}</strong> · ${ride.veiculo}`,
+        confirmLabel: "Reservar",
+        onConfirm: () => {
+          const result = CESUCAR.reserveRide(id);
+          result.ok ? refresh() : CESUCAR.toast(result.error, "error");
+        }
+      });
+    }
+
+    function cancelRes(rideId, event) {
+      event.stopPropagation();
+      CESUCAR.modal({
+        icon: "!",
+        title: "Cancelar reserva",
+        body: "Tem certeza que deseja cancelar esta reserva?",
+        confirmLabel: "Cancelar",
+        onConfirm: () => {
+          CESUCAR.cancelReservation(rideId);
+          refresh();
+        }
+      });
+    }
+
+    function markAllRead(event) {
+      event.preventDefault();
+      CESUCAR.markAllRead();
+      renderNotifs();
+      CESUCAR.toast("Notificações marcadas como lidas.", "info");
+    }
+
+    function shareApp(event) {
+      event.preventDefault();
+      const url = window.location.origin && window.location.origin !== "null"
+        ? window.location.origin
+        : window.location.href.replace(/dashboard\.html.*/, "index.html");
+
+      if (navigator.share) {
+        navigator.share({ title: "CESUCAR", text: "Caronas universitárias CESUCA", url });
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(url).then(() => CESUCAR.toast("Link copiado.", "success"));
+      } else {
+        CESUCAR.toast(url, "info", 5000);
+      }
+    }
+
+    function refresh() {
+      updateKPIs();
+      renderRides();
+      renderMyReservations();
+      renderActivity();
+      renderNotifs();
+    }
+
+    document.getElementById("notifBtn").addEventListener("click", (event) => {
+      event.preventDefault();
+      document.getElementById("notifPanel").classList.toggle("open");
+      document.getElementById("userMenu").classList.remove("open");
+      renderNotifs();
+    });
+
+    document.getElementById("userChipBtn").addEventListener("click", () => {
+      document.getElementById("userMenu").classList.toggle("open");
+      document.getElementById("notifPanel").classList.remove("open");
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest("#notifBtn") && !event.target.closest("#notifPanel")) {
+        document.getElementById("notifPanel").classList.remove("open");
+      }
+      if (!event.target.closest("#userChipBtn") && !event.target.closest("#userMenu")) {
+        document.getElementById("userMenu").classList.remove("open");
+      }
+    });
+
+    refresh();
+  </script>
+</body>
+</html>
