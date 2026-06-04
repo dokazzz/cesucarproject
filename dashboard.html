@@ -247,7 +247,7 @@
               <span class="ride-meta">${ride.driver} · ${ride.horario}</span>
               ${tipoBadge(ride.tipo || "ida")}
             </div>
-            <div class="ride-meta">${ride.veiculo} · ${ride.vagasDisp} vaga${ride.vagasDisp !== 1 ? "s" : ""} disponível${ride.vagasDisp !== 1 ? "is" : ""}</div>
+            <div class="ride-meta">${ride.veiculo}${ride.placa ? ` · <span class="badge badge-placa">${ride.placa}</span>` : ""} · ${ride.vagasDisp} vaga${ride.vagasDisp !== 1 ? "s" : ""} disponível${ride.vagasDisp !== 1 ? "is" : ""}</div>
           </div>
           <div class="ride-price">R$${ride.valor}</div>
         </article>

@@ -25,7 +25,7 @@
   --radius: 8px;
   --shadow: 0 14px 40px rgba(23, 32, 51, 0.09);
   --shadow-lg: 0 24px 70px rgba(23, 32, 51, 0.16);
-  --nav-h: 90px;
+  --nav-h: 180px;
   --t: 180ms ease;
 }
 
@@ -166,26 +166,26 @@ body > nav:not(.navbar) {
   opacity: 0.85;
 }
 
-/* Navbar: logo 60px — 58% maior que os 38px originais */
+/* Navbar */
 .navbar-logo img,
 .nav-logo img {
   width: auto;
-  height: 60px;
+  height: 200px;
   object-fit: contain;
 }
 
-/* Footer: logo maior e bem visível */
+/* Footer */
 .f-logo img {
   width: auto;
-  height: 56px;
+  height: 180px;
   object-fit: contain;
 }
 
-/* Auth pages (login / cadastro): logo grande e centralizada */
+/* Auth pages (login / cadastro) */
 .auth-logo img,
 .login-logo img,
 .cad-logo img {
-  width: 240px;
+  width: min(460px, 90vw);
   height: auto;
   object-fit: contain;
 }
@@ -1679,6 +1679,24 @@ footer {
   border-color: rgba(244, 185, 66, 0.28);
 }
 
+/* Badge de placa — estilo placa de carro */
+.badge-placa {
+  background: var(--surface);
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  font-family: "Courier New", Courier, monospace;
+}
+
+[data-theme="dark"] .badge-placa {
+  background: var(--surface-2);
+  border-color: var(--glass-border);
+}
+
 .ride-reserved-badge {
   padding: 4px 10px;
 }
@@ -2062,7 +2080,7 @@ footer {
 
 @media (max-width: 680px) {
   :root {
-    --nav-h: 72px;
+    --nav-h: 130px;
   }
 
   .navbar,
@@ -2076,7 +2094,7 @@ footer {
 
   .navbar-logo img,
   .nav-logo img {
-    height: 32px;
+    height: 140px;
   }
 
   .navbar-right > .btn-primary {
@@ -2568,7 +2586,7 @@ footer {
 }
 
 .hero-brand-logo img {
-  height: 80px;
+  height: 200px;
   width: auto;
   object-fit: contain;
   animation: logoGlow 4s ease-in-out 1s infinite;
@@ -2657,27 +2675,27 @@ footer {
 
 @media (max-width: 980px) {
   .hero-brand-logo img {
-    height: 68px;
+    height: 160px;
   }
 }
 
 @media (max-width: 680px) {
   .navbar-logo img,
   .nav-logo img {
-    height: 48px;
+    height: 140px;
   }
 
   .auth-logo img,
   .login-logo img,
   .cad-logo img {
-    width: 200px;
+    width: min(380px, 88vw);
   }
 
   .hero-brand-logo img {
-    height: 60px;
+    height: 140px;
   }
 
   .f-logo img {
-    height: 46px;
+    height: 140px;
   }
 }

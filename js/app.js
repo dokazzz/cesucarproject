@@ -32,6 +32,7 @@
       data: today,
       horario: "07:20",
       veiculo: "Onix prata",
+      placa: "ABC-1234",
       vagas: 3,
       valor: 10,
       tipo: "ida"
@@ -48,6 +49,7 @@
       data: today,
       horario: "08:10",
       veiculo: "HB20 branco",
+      placa: "DEF-5678",
       vagas: 2,
       valor: 12,
       tipo: "ida"
@@ -64,6 +66,7 @@
       data: today,
       horario: "18:30",
       veiculo: "Argo vermelho",
+      placa: "GHI-9012",
       vagas: 4,
       valor: 8,
       tipo: "volta"
@@ -80,6 +83,7 @@
       data: today,
       horario: "19:10",
       veiculo: "Gol azul",
+      placa: "JKL-3456",
       vagas: 3,
       valor: 15,
       tipo: "volta"
@@ -96,6 +100,7 @@
       data: tomorrow,
       horario: "07:00",
       veiculo: "Fit cinza",
+      placa: "MNO-7890",
       vagas: 2,
       valor: 10,
       tipo: "ida"
@@ -236,6 +241,7 @@
       data: rideData.data,
       horario: rideData.horario,
       veiculo: rideData.veiculo || "",
+      placa: rideData.placa || "",
       vagas: parseInt(rideData.vagas, 10) || 3,
       valor: parseFloat(rideData.valor) || 0,
       tipo

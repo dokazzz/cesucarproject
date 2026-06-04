@@ -259,6 +259,7 @@
               <div class="driver-tags">
                 <span class="badge badge-gray">${r.data}</span>
                 ${r.veiculo ? `<span class="badge badge-blue">${r.veiculo}</span>` : ""}
+                ${r.placa ? `<span class="badge badge-placa">${r.placa}</span>` : ""}
                 <span class="badge badge-gray">${r.vagasDisp}/${r.vagas} vagas</span>
                 <span class="badge badge-rating">★ ${r.driverRating}</span>
                 ${tipoBadge(r.tipo || "ida")}
