@@ -27,7 +27,28 @@
       </div>
 
       <form id="cadForm" onsubmit="handleCad(event)" novalidate>
+
+        <!-- Etapa 1: Dados pessoais + perfil -->
         <section class="form-step" id="step1">
+          <!-- Seletor de perfil -->
+          <div class="form-group">
+            <label class="form-label">Você é <span class="req">*</span></label>
+            <div class="role-selector">
+              <label class="role-option" id="role-passageiro">
+                <input type="radio" name="perfil" value="passageiro" checked />
+                <span class="role-icon">🎓</span>
+                <span class="role-label">Passageiro</span>
+                <span class="role-desc">Procuro caronas</span>
+              </label>
+              <label class="role-option" id="role-motorista">
+                <input type="radio" name="perfil" value="motorista" />
+                <span class="role-icon">🚗</span>
+                <span class="role-label">Motorista</span>
+                <span class="role-desc">Ofereço caronas</span>
+              </label>
+            </div>
+          </div>
+
           <div class="form-grid-2">
             <div class="form-group">
               <label class="form-label" for="nome">Nome <span class="req">*</span></label>
@@ -69,6 +90,7 @@
           <button type="button" class="btn btn-blue btn-block" onclick="nextStep(2)">Continuar</button>
         </section>
 
+        <!-- Etapa 2: Contato -->
         <section class="form-step" id="step2" hidden>
           <div class="form-group">
             <label class="form-label" for="email">E-mail <span class="req">*</span></label>
@@ -87,6 +109,7 @@
           </div>
         </section>
 
+        <!-- Etapa 3: Senha -->
         <section class="form-step" id="step3" hidden>
           <div class="form-group">
             <label class="form-label" for="senha">Senha <span class="req">*</span></label>
@@ -129,6 +152,17 @@
   <script src="js/app.js"></script>
   <script>
     let currentStep = 1;
+
+    // Destaque visual ao selecionar perfil
+    document.querySelectorAll('input[name="perfil"]').forEach((radio) => {
+      radio.addEventListener("change", () => {
+        document.querySelectorAll(".role-option").forEach((el) => el.classList.remove("selected"));
+        radio.closest(".role-option").classList.add("selected");
+      });
+    });
+    document.querySelector('input[name="perfil"]:checked')
+      ?.closest(".role-option")
+      ?.classList.add("selected");
 
     function setStep(next) {
       document.getElementById("step" + currentStep).hidden = true;
@@ -209,6 +243,8 @@
       await new Promise((resolve) => setTimeout(resolve, 800));
 
       const name = document.getElementById("nome").value.trim();
+      const perfil = document.querySelector('input[name="perfil"]:checked')?.value || "passageiro";
+
       const userData = {
         id: Date.now(),
         name,
@@ -219,6 +255,7 @@
         avatar: CESUCAR.initials(name),
         rating: "5.0",
         trips: 0,
+        perfil,
         role: "both"
       };
 
@@ -226,8 +263,8 @@
       CESUCAR._set("loggedIn", true);
       CESUCAR.hideLoading(button);
       button.textContent = "Conta criada";
-      CESUCAR.toast("Conta criada com sucesso.", "success", 1800);
-      setTimeout(() => window.location.href = "dashboard.html", 1000);
+      CESUCAR.toast(`Bem-vindo, ${name.split(" ")[0]}! Conta criada como ${perfil}.`, "success", 2000);
+      setTimeout(() => window.location.href = "dashboard.html", 1100);
     }
   </script>
 </body>

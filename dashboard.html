@@ -19,6 +19,7 @@
       <li><a href="index.html">Início</a></li>
       <li><a href="dashboard.html" class="active">Dashboard</a></li>
       <li><a href="procurar-carona.html">Procurar</a></li>
+      <li><a href="oferecer-carona.html" id="navOferecer" style="display:none">Oferecer</a></li>
     </ul>
     <div class="navbar-right">
       <div class="theme-toggle"></div>
@@ -26,6 +27,7 @@
       <div class="nav-user-chip" id="userChipBtn">
         <div class="nav-user-avatar" data-user-avatar>CE</div>
         <span data-user-name>Usuário</span>
+        <span data-user-perfil class="perfil-badge"></span>
       </div>
       <button class="hamburger" id="hamburger" aria-label="Abrir menu"><span></span><span></span><span></span></button>
     </div>
@@ -44,9 +46,11 @@
     <div class="user-menu-header">
       <div class="user-menu-name" data-user-name>Usuário</div>
       <div class="user-menu-email" id="userEmail">email@cesucar.com</div>
+      <div id="userPerfilBadge" class="user-menu-perfil"></div>
     </div>
     <a href="dashboard.html">Dashboard</a>
     <a href="procurar-carona.html">Procurar carona</a>
+    <a href="oferecer-carona.html" id="menuOferecer" style="display:none">Oferecer carona</a>
     <a href="#" data-logout>Sair</a>
   </div>
 
@@ -54,6 +58,7 @@
     <a href="index.html">Início</a>
     <a href="dashboard.html">Dashboard</a>
     <a href="procurar-carona.html">Procurar carona</a>
+    <a href="oferecer-carona.html" id="drawerOferecer" style="display:none">Oferecer carona</a>
     <div class="drawer-btns">
       <a href="#" data-logout class="btn btn-ghost">Sair</a>
     </div>
@@ -61,8 +66,13 @@
 
   <main class="page-body">
     <header class="dash-greeting reveal">
-      <h1>Olá, <span id="greetName">Estudante</span></h1>
-      <p id="greetSub">Veja suas reservas, rotas disponíveis e notificações recentes.</p>
+      <div class="dash-greeting-inner">
+        <div>
+          <h1>Olá, <span id="greetName">Estudante</span></h1>
+          <p id="greetSub">Veja suas reservas, rotas disponíveis e notificações recentes.</p>
+        </div>
+        <div id="perfilBanner" class="perfil-banner"></div>
+      </div>
     </header>
 
     <section class="dash-grid reveal" aria-label="Indicadores">
@@ -106,11 +116,8 @@
 
       <aside>
         <div class="section-title reveal"><span class="dot"></span>Ações rápidas</div>
-        <div class="quick-actions reveal">
-          <a href="procurar-carona.html" class="qa-btn"><span class="qa-btn-icon">⌕</span><span>Procurar</span></a>
-          <a href="index.html" class="qa-btn"><span class="qa-btn-icon">⌂</span><span>Início</span></a>
-          <a href="#" class="qa-btn" onclick="shareApp(event)"><span class="qa-btn-icon">↗</span><span>Compartilhar</span></a>
-          <a href="#" class="qa-btn" data-logout><span class="qa-btn-icon">↳</span><span>Sair</span></a>
+        <div class="quick-actions reveal" id="quickActions">
+          <!-- Preenchido via JS baseado no perfil -->
         </div>
 
         <div class="side-card reveal">
@@ -139,6 +146,9 @@
     CESUCAR.requireAuth();
 
     const user = CESUCAR.currentUser();
+    const perfil = user?.perfil || "passageiro";
+    const isMotorista = perfil === "motorista";
+
     if (user) {
       const firstName = user.name.split(" ")[0];
       const hour = new Date().getHours();
@@ -146,7 +156,50 @@
 
       document.getElementById("greetName").textContent = firstName;
       document.getElementById("userEmail").textContent = user.email || "";
-      document.getElementById("greetSub").textContent = `${greet}. Veja suas reservas, rotas disponíveis e notificações recentes.`;
+      document.getElementById("greetSub").textContent =
+        `${greet}. ${isMotorista ? "Gerencie suas caronas e veja as solicitações." : "Veja suas reservas, rotas disponíveis e notificações recentes."}`;
+
+      // Badge de perfil no header
+      const banner = document.getElementById("perfilBanner");
+      banner.innerHTML = `
+        <span class="perfil-banner-badge ${perfil}">
+          ${perfil === "motorista" ? "🚗 Motorista" : "🎓 Passageiro"}
+        </span>
+      `;
+
+      // Badge no menu do usuário
+      document.getElementById("userPerfilBadge").innerHTML = `
+        <span class="perfil-badge ${perfil}">${perfil === "motorista" ? "Motorista" : "Passageiro"}</span>
+      `;
+    }
+
+    // Link "Oferecer carona" visível apenas para motoristas
+    if (isMotorista) {
+      document.getElementById("navOferecer").style.display = "";
+      document.getElementById("menuOferecer").style.display = "";
+      document.getElementById("drawerOferecer").style.display = "";
+    }
+
+    // Ações rápidas por perfil
+    function renderQuickActions() {
+      const container = document.getElementById("quickActions");
+      if (isMotorista) {
+        container.innerHTML = `
+          <a href="oferecer-carona.html" class="qa-btn"><span class="qa-btn-icon">+</span><span>Oferecer carona</span></a>
+          <a href="oferecer-carona.html#gerenciar" class="qa-btn"><span class="qa-btn-icon">▦</span><span>Minhas caronas</span></a>
+          <a href="dashboard.html#reservas" class="qa-btn"><span class="qa-btn-icon">✉</span><span>Solicitações</span></a>
+          <a href="#" class="qa-btn" data-logout><span class="qa-btn-icon">↳</span><span>Sair</span></a>
+        `;
+      } else {
+        container.innerHTML = `
+          <a href="procurar-carona.html" class="qa-btn"><span class="qa-btn-icon">⌕</span><span>Procurar</span></a>
+          <a href="procurar-carona.html" class="qa-btn"><span class="qa-btn-icon">✓</span><span>Solicitar vaga</span></a>
+          <a href="dashboard.html#reservas" class="qa-btn"><span class="qa-btn-icon">▦</span><span>Minhas viagens</span></a>
+          <a href="#" class="qa-btn" data-logout><span class="qa-btn-icon">↳</span><span>Sair</span></a>
+        `;
+      }
+      // Rebind logout links que foram criados dinamicamente
+      container.querySelectorAll("[data-logout]").forEach((el) => el.addEventListener("click", CESUCAR.logout));
     }
 
     function updateKPIs() {
@@ -161,6 +214,12 @@
       document.getElementById("kpiEconomiaTrend").textContent = economy ? "Estimativa mensal" : "";
       document.getElementById("kpiCO2").textContent = co2 + "kg";
       if (user) document.getElementById("kpiRating").textContent = user.rating || "5.0";
+    }
+
+    function tipoBadge(tipo) {
+      return tipo === "ida"
+        ? `<span class="badge badge-ida">→ Ida para o CESUCA</span>`
+        : `<span class="badge badge-volta">← Volta do CESUCA</span>`;
     }
 
     function renderRides() {
@@ -186,6 +245,7 @@
             <div class="driver-mini">
               <span class="badge badge-orange">${ride.driverRating}</span>
               <span class="ride-meta">${ride.driver} · ${ride.horario}</span>
+              ${tipoBadge(ride.tipo || "ida")}
             </div>
             <div class="ride-meta">${ride.veiculo} · ${ride.vagasDisp} vaga${ride.vagasDisp !== 1 ? "s" : ""} disponível${ride.vagasDisp !== 1 ? "is" : ""}</div>
           </div>
@@ -213,7 +273,10 @@
         <article class="ride-card">
           <div class="ride-info">
             <div class="ride-route">${reservation.ride?.origem || "Origem"} <span class="arrow">→</span> ${reservation.ride?.destino || "Destino"}</div>
-            <div class="ride-meta">${reservation.ride?.horario || ""} · ${reservation.ride?.driver || ""}</div>
+            <div class="ride-meta">
+              ${reservation.ride?.horario || ""} · ${reservation.ride?.driver || ""}
+              ${tipoBadge(reservation.ride?.tipo || "ida")}
+            </div>
           </div>
           <span class="badge badge-green">Confirmado</span>
           <button class="btn btn-ghost btn-sm" onclick="cancelRes(${reservation.rideId}, event)">Cancelar</button>
@@ -260,7 +323,7 @@
       CESUCAR.modal({
         icon: "✓",
         title: "Reservar carona",
-        body: `<strong>${ride.driver}</strong><br>${ride.origem} → ${ride.destino} às ${ride.horario}<br><br>Valor: <strong>R$${ride.valor}</strong> · ${ride.veiculo}`,
+        body: `<strong>${ride.driver}</strong><br>${ride.origem} → ${ride.destino} às ${ride.horario}<br>Tipo: ${ride.tipo === "ida" ? "Ida para o CESUCA" : "Volta do CESUCA"}<br><br>Valor: <strong>R$${ride.valor}</strong> · ${ride.veiculo}`,
         confirmLabel: "Reservar",
         onConfirm: () => {
           const result = CESUCAR.reserveRide(id);
@@ -334,6 +397,7 @@
       }
     });
 
+    renderQuickActions();
     refresh();
   </script>
 </body>

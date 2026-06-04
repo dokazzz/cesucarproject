@@ -45,6 +45,12 @@
   <main>
     <section class="home-hero">
       <div class="hero-copy reveal">
+        <div class="hero-brand">
+          <div class="hero-brand-logo">
+            <img src="logo.png" alt="CESUCAR" onerror="this.style.display='none'" />
+          </div>
+          <span class="hero-brand-slogan">Carona. Conexão. Comunidade.</span>
+        </div>
         <div class="section-tag">Caronas CESUCA</div>
         <h1 class="hero-title">Vá para a faculdade com quem <em>já faz parte</em> da sua rotina.</h1>
         <p class="hero-subtitle">
@@ -54,14 +60,20 @@
         <div class="hero-search">
           <div class="hero-search-grid">
             <div class="form-group">
-              <label class="form-label" for="homeOrigem">Origem</label>
-              <input class="form-input" id="homeOrigem" type="text" placeholder="Ex.: Cachoeirinha" />
+              <label class="form-label" for="homeCidade">Sua cidade</label>
+              <input class="form-input" id="homeCidade" type="text" placeholder="Ex.: Cachoeirinha" list="cidadesList" />
+              <datalist id="cidadesList">
+                <option>Cachoeirinha</option>
+                <option>Gravataí</option>
+                <option>Canoas</option>
+                <option>Alvorada</option>
+                <option>Porto Alegre</option>
+                <option>Viamão</option>
+                <option>Sapucaia do Sul</option>
+                <option>São Leopoldo</option>
+              </datalist>
             </div>
-            <div class="form-group">
-              <label class="form-label" for="homeDestino">Destino</label>
-              <input class="form-input" id="homeDestino" type="text" placeholder="Ex.: Porto Alegre" />
-            </div>
-            <button class="btn btn-primary btn-lg" onclick="doSearch()">Buscar</button>
+            <button class="btn btn-primary btn-lg" onclick="doSearch()">Buscar caronas</button>
           </div>
           <div class="hero-actions">
             <a href="procurar-carona.html" class="btn btn-ghost">Ver todas as caronas</a>
@@ -87,7 +99,7 @@
           </div>
           <div class="route-line">
             <span class="route-dot"></span>
-            <strong>Porto Alegre</strong>
+            <strong>CESUCA</strong>
             <span>08:05</span>
           </div>
         </div>
@@ -152,20 +164,20 @@
     <section class="section compact reveal">
       <h2 class="sec-title">Rotas mais buscadas</h2>
       <div class="routes-grid">
-        <a href="procurar-carona.html?origem=Cachoeirinha&destino=Porto+Alegre" class="route-chip">
-          <span>Cachoeirinha <span class="rc-arrow">→</span> Porto Alegre</span>
+        <a href="procurar-carona.html?cidade=Cachoeirinha&tipo=ida" class="route-chip">
+          <span>Cachoeirinha <span class="rc-arrow">→</span> CESUCA</span>
           <span class="rc-price">R$10</span>
         </a>
-        <a href="procurar-carona.html?origem=Gravataí&destino=Porto+Alegre" class="route-chip">
-          <span>Gravataí <span class="rc-arrow">→</span> Porto Alegre</span>
+        <a href="procurar-carona.html?cidade=Gravataí&tipo=ida" class="route-chip">
+          <span>Gravataí <span class="rc-arrow">→</span> CESUCA</span>
           <span class="rc-price">R$12</span>
         </a>
-        <a href="procurar-carona.html?origem=Canoas&destino=Porto+Alegre" class="route-chip">
-          <span>Canoas <span class="rc-arrow">→</span> Porto Alegre</span>
+        <a href="procurar-carona.html?cidade=Canoas&tipo=ida" class="route-chip">
+          <span>Canoas <span class="rc-arrow">→</span> CESUCA</span>
           <span class="rc-price">R$8</span>
         </a>
-        <a href="procurar-carona.html?origem=Alvorada&destino=Porto+Alegre" class="route-chip">
-          <span>Alvorada <span class="rc-arrow">→</span> Porto Alegre</span>
+        <a href="procurar-carona.html?cidade=Alvorada&tipo=ida" class="route-chip">
+          <span>Alvorada <span class="rc-arrow">→</span> CESUCA</span>
           <span class="rc-price">R$15</span>
         </a>
       </div>
@@ -219,6 +231,7 @@
           <img src="logo.png" alt="CESUCAR" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
           <span class="f-logo-fb">CESUCAR</span>
         </a>
+        <span class="f-slogan">Carona. Conexão. Comunidade.</span>
         <p class="f-desc">Plataforma de caronas universitárias para organizar trajetos entre estudantes da CESUCA.</p>
       </div>
       <div class="f-col">
@@ -238,9 +251,9 @@
       <div class="f-col">
         <strong class="f-col-title">Rotas</strong>
         <ul>
-          <li><a href="procurar-carona.html?origem=Cachoeirinha">Cachoeirinha → POA</a></li>
-          <li><a href="procurar-carona.html?origem=Gravataí">Gravataí → POA</a></li>
-          <li><a href="procurar-carona.html?origem=Canoas">Canoas → POA</a></li>
+          <li><a href="procurar-carona.html?cidade=Cachoeirinha">Cachoeirinha → CESUCA</a></li>
+          <li><a href="procurar-carona.html?cidade=Gravataí">Gravataí → CESUCA</a></li>
+          <li><a href="procurar-carona.html?cidade=Canoas">Canoas → CESUCA</a></li>
         </ul>
       </div>
     </div>
@@ -253,11 +266,9 @@
   <script src="js/app.js"></script>
   <script>
     function doSearch() {
-      const origem = document.getElementById("homeOrigem").value.trim();
-      const destino = document.getElementById("homeDestino").value.trim();
+      const cidade = document.getElementById("homeCidade").value.trim();
       const params = new URLSearchParams();
-      if (origem) params.set("origem", origem);
-      if (destino) params.set("destino", destino);
+      if (cidade) params.set("cidade", cidade);
       window.location.href = "procurar-carona.html" + (params.toString() ? "?" + params : "");
     }
 

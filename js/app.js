@@ -1,5 +1,6 @@
 (function () {
   const KEY = "cesucar:";
+  const API_URL = "http://localhost:5000";
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 
@@ -13,9 +14,11 @@
     avatar: "AC",
     rating: "4.9",
     trips: 18,
+    perfil: "passageiro",
     role: "both"
   };
 
+  // Todas as rotas seguem o padrão universitário: Cidade ↔ CESUCA
   const demoRides = [
     {
       id: 101,
@@ -25,12 +28,13 @@
       driverRating: 4.9,
       curso: "Engenharia de Software",
       origem: "Cachoeirinha",
-      destino: "Porto Alegre",
+      destino: "CESUCA",
       data: today,
       horario: "07:20",
       veiculo: "Onix prata",
       vagas: 3,
-      valor: 10
+      valor: 10,
+      tipo: "ida"
     },
     {
       id: 102,
@@ -40,12 +44,13 @@
       driverRating: 4.8,
       curso: "Administração",
       origem: "Gravataí",
-      destino: "Porto Alegre",
+      destino: "CESUCA",
       data: today,
       horario: "08:10",
       veiculo: "HB20 branco",
       vagas: 2,
-      valor: 12
+      valor: 12,
+      tipo: "ida"
     },
     {
       id: 103,
@@ -54,13 +59,14 @@
       driverAvatar: "MS",
       driverRating: 5,
       curso: "Direito",
-      origem: "Canoas",
-      destino: "Porto Alegre",
+      origem: "CESUCA",
+      destino: "Canoas",
       data: today,
       horario: "18:30",
       veiculo: "Argo vermelho",
       vagas: 4,
-      valor: 8
+      valor: 8,
+      tipo: "volta"
     },
     {
       id: 104,
@@ -69,13 +75,14 @@
       driverAvatar: "LP",
       driverRating: 4.7,
       curso: "Sistemas de Informação",
-      origem: "Alvorada",
-      destino: "Porto Alegre",
+      origem: "CESUCA",
+      destino: "Alvorada",
       data: today,
       horario: "19:10",
       veiculo: "Gol azul",
       vagas: 3,
-      valor: 15
+      valor: 15,
+      tipo: "volta"
     },
     {
       id: 105,
@@ -84,21 +91,26 @@
       driverAvatar: "BR",
       driverRating: 4.9,
       curso: "Psicologia",
-      origem: "Porto Alegre",
-      destino: "Cachoeirinha",
+      origem: "Canoas",
+      destino: "CESUCA",
       data: tomorrow,
-      horario: "21:40",
+      horario: "07:00",
       veiculo: "Fit cinza",
       vagas: 2,
-      valor: 10
+      valor: 10,
+      tipo: "ida"
     }
   ];
 
   const demoNotifications = [
-    { id: 1, text: "João confirmou uma carona para hoje às 07:20.", time: "Agora", read: false },
-    { id: 2, text: "Marina publicou uma rota saindo de Canoas.", time: "2h atrás", read: false },
+    { id: 1, text: "João confirmou a carona Cachoeirinha → CESUCA às 07:20.", time: "Agora", read: false },
+    { id: 2, text: "Marina publicou Canoas → CESUCA às 18:30 com 4 vagas.", time: "2h atrás", read: false },
     { id: 3, text: "Sua conta está verificada na comunidade CESUCA.", time: "Ontem", read: true }
   ];
+
+  // ------------------------------------------------------------------
+  // Persistência (localStorage)
+  // ------------------------------------------------------------------
 
   function read(name, fallback) {
     try {
@@ -114,18 +126,49 @@
     return value;
   }
 
+  // ------------------------------------------------------------------
+  // Utilitários
+  // ------------------------------------------------------------------
+
   function normalize(value) {
     return String(value || "")
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[̀-ͯ]/g, "")
       .toLowerCase()
       .trim();
   }
 
-  function seed() {
-    if (!read("rides", null)) write("rides", demoRides);
-    if (!read("notifications", null)) write("notifications", demoNotifications);
+  function initials(name) {
+    return String(name || "CE")
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   }
+
+  // ------------------------------------------------------------------
+  // Seed (dados iniciais)
+  // ------------------------------------------------------------------
+
+  function seed() {
+    // Força reseed se os dados ainda usam rotas cidade→cidade (versão antiga)
+    const storedRides = read("rides", null);
+    const needsReseed = !storedRides || storedRides.some(
+      (r) => r.destino !== "CESUCA" && r.origem !== "CESUCA"
+    );
+    if (needsReseed) write("rides", demoRides);
+    // Reseed notifications se ainda usam texto antigo (sem CESUCA)
+    const storedNotifs = read("notifications", null);
+    if (!storedNotifs || storedNotifs.some((n) => n.text.includes("Porto Alegre"))) {
+      write("notifications", demoNotifications);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Caronas
+  // ------------------------------------------------------------------
 
   function getStoredRides() {
     seed();
@@ -161,8 +204,44 @@
       rides = rides.filter((ride) => ride.data === filters.data);
     }
 
+    if (filters.tipo && filters.tipo !== "todos") {
+      rides = rides.filter((ride) => ride.tipo === filters.tipo);
+    }
+
     return rides.sort((a, b) => a.horario.localeCompare(b.horario));
   }
+
+  function addRide(rideData) {
+    const rides = getStoredRides();
+    const tipo = rideData.tipo || "ida";
+    // Garante o padrão universitário: Cidade → CESUCA (ida) ou CESUCA → Cidade (volta)
+    const origem = tipo === "ida" ? rideData.cidade : "CESUCA";
+    const destino = tipo === "ida" ? "CESUCA" : rideData.cidade;
+    const user = currentUser();
+    const newRide = {
+      id: Date.now(),
+      driverId: user?.id || 0,
+      driver: user?.name || "Motorista",
+      driverAvatar: user?.avatar || initials(user?.name || ""),
+      driverRating: parseFloat(user?.rating || "5.0"),
+      curso: user?.curso || "",
+      origem,
+      destino,
+      data: rideData.data,
+      horario: rideData.horario,
+      veiculo: rideData.veiculo || "",
+      vagas: parseInt(rideData.vagas, 10) || 3,
+      valor: parseFloat(rideData.valor) || 0,
+      tipo
+    };
+    rides.push(newRide);
+    write("rides", rides);
+    return newRide;
+  }
+
+  // ------------------------------------------------------------------
+  // Autenticação
+  // ------------------------------------------------------------------
 
   function isLoggedIn() {
     return !!read("loggedIn", false);
@@ -170,6 +249,11 @@
 
   function currentUser() {
     return isLoggedIn() ? read("currentUser", demoUser) : null;
+  }
+
+  function getUserPerfil() {
+    const user = currentUser();
+    return user?.perfil || "passageiro";
   }
 
   function requireAuth() {
@@ -201,6 +285,10 @@
     }, 500);
   }
 
+  // ------------------------------------------------------------------
+  // Reservas
+  // ------------------------------------------------------------------
+
   function reserveRide(id) {
     const ride = getRides().find((item) => item.id === id);
     if (!ride) return { ok: false, error: "Carona não encontrada." };
@@ -227,6 +315,10 @@
     toast("Reserva cancelada.", "info");
   }
 
+  // ------------------------------------------------------------------
+  // Notificações
+  // ------------------------------------------------------------------
+
   function getNotifications() {
     seed();
     return read("notifications", []);
@@ -244,6 +336,57 @@
       badge.style.display = count ? "grid" : "none";
     });
   }
+
+  // ------------------------------------------------------------------
+  // Integração com API Flask
+  // ------------------------------------------------------------------
+
+  async function apiStatus() {
+    try {
+      const response = await fetch(`${API_URL}/status`);
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async function apiCalcularCarona(dados) {
+    try {
+      const response = await fetch(`${API_URL}/calcular-carona`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dados)
+      });
+      return await response.json();
+    } catch {
+      // Fallback local se a API não estiver disponível
+      if (dados.consumo > 0 && dados.passageiros > 0) {
+        const custo = (dados.distancia / dados.consumo) * dados.preco_combustivel;
+        return {
+          custo_total: Math.round(custo * 100) / 100,
+          valor_por_pessoa: Math.round((custo / dados.passageiros) * 100) / 100
+        };
+      }
+      return null;
+    }
+  }
+
+  async function apiPublicarCarona(rideData) {
+    try {
+      const response = await fetch(`${API_URL}/caronas`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(rideData)
+      });
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // UI — Toast e Modal
+  // ------------------------------------------------------------------
 
   function toast(message, type = "info", duration = 3000) {
     let stack = document.querySelector(".toast-stack");
@@ -321,6 +464,10 @@
     if (button.dataset.originalHtml) button.innerHTML = button.dataset.originalHtml;
   }
 
+  // ------------------------------------------------------------------
+  // Tema
+  // ------------------------------------------------------------------
+
   function applyTheme(theme) {
     const next = theme === "dark" ? "dark" : "light";
     document.documentElement.setAttribute("data-theme", next);
@@ -352,6 +499,10 @@
     });
   }
 
+  // ------------------------------------------------------------------
+  // Mobile drawer
+  // ------------------------------------------------------------------
+
   function setupMobileDrawer() {
     const button = document.getElementById("hamburger") || document.getElementById("ham");
     const drawer = document.getElementById("mobileDrawer") || document.getElementById("drawer");
@@ -373,6 +524,10 @@
     });
   }
 
+  // ------------------------------------------------------------------
+  // UI do usuário na navbar
+  // ------------------------------------------------------------------
+
   function setupUserUI() {
     const user = currentUser();
     document.querySelectorAll("[data-user-name]").forEach((el) => {
@@ -382,18 +537,21 @@
       el.textContent = user ? user.avatar || initials(user.name) : "CE";
     });
     document.querySelectorAll("[data-logout]").forEach((el) => el.addEventListener("click", logout));
+
+    // Exibir badge de perfil na navbar se disponível
+    document.querySelectorAll("[data-user-perfil]").forEach((el) => {
+      if (user?.perfil) {
+        el.textContent = user.perfil === "motorista" ? "Motorista" : "Passageiro";
+        el.className = `perfil-badge ${user.perfil}`;
+      }
+    });
+
     updateNotifBadge();
   }
 
-  function initials(name) {
-    return String(name || "CE")
-      .split(" ")
-      .filter(Boolean)
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  }
+  // ------------------------------------------------------------------
+  // Reveal animation
+  // ------------------------------------------------------------------
 
   function setupReveal() {
     const nodes = document.querySelectorAll(".reveal");
@@ -417,6 +575,10 @@
     nodes.forEach((node) => observer.observe(node));
   }
 
+  // ------------------------------------------------------------------
+  // Init
+  // ------------------------------------------------------------------
+
   function init() {
     seed();
     setupThemeControls();
@@ -428,6 +590,7 @@
   window.CESUCAR = {
     _get: read,
     _set: write,
+    API_URL,
     today,
     tomorrow,
     currentUser,
@@ -436,12 +599,17 @@
     login,
     logout,
     getRides,
+    addRide,
     getReservations,
     reserveRide,
     cancelReservation,
     getNotifications,
     markAllRead,
     updateNotifBadge,
+    getUserPerfil,
+    apiStatus,
+    apiCalcularCarona,
+    apiPublicarCarona,
     toast,
     modal,
     showLoading,

@@ -45,6 +45,23 @@
 
         <a href="#" class="forgot-link" onclick="forgotPwd(event)">Esqueci minha senha</a>
 
+        <!-- Seletor de perfil para a sessão -->
+        <div class="form-group">
+          <label class="form-label">Entrar como</label>
+          <div class="role-selector role-selector-sm">
+            <label class="role-option" id="role-passageiro">
+              <input type="radio" name="perfil" value="passageiro" checked />
+              <span class="role-icon">🎓</span>
+              <span class="role-label">Passageiro</span>
+            </label>
+            <label class="role-option" id="role-motorista">
+              <input type="radio" name="perfil" value="motorista" />
+              <span class="role-icon">🚗</span>
+              <span class="role-label">Motorista</span>
+            </label>
+          </div>
+        </div>
+
         <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn">Entrar</button>
 
         <div class="signup-row">Não tem conta? <a href="cadastro.html">Cadastre-se grátis</a></div>
@@ -59,6 +76,17 @@
   <script src="js/app.js"></script>
   <script>
     if (CESUCAR.isLoggedIn()) window.location.href = "dashboard.html";
+
+    // Destaque visual do perfil selecionado
+    document.querySelectorAll('input[name="perfil"]').forEach((radio) => {
+      radio.addEventListener("change", () => {
+        document.querySelectorAll(".role-option").forEach((el) => el.classList.remove("selected"));
+        radio.closest(".role-option").classList.add("selected");
+      });
+    });
+    document.querySelector('input[name="perfil"]:checked')
+      ?.closest(".role-option")
+      ?.classList.add("selected");
 
     function togglePwd() {
       const input = document.getElementById("password");
@@ -92,6 +120,7 @@
       const button = document.getElementById("loginBtn");
       const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
+      const perfil = document.querySelector('input[name="perfil"]:checked')?.value || "passageiro";
 
       if (!email) {
         document.getElementById("err-email").textContent = "Informe seu e-mail.";
@@ -113,8 +142,15 @@
         return;
       }
 
+      // Atualizar perfil do usuário conforme seleção
+      const user = CESUCAR._get("currentUser", null);
+      if (user) {
+        user.perfil = perfil;
+        CESUCAR._set("currentUser", user);
+      }
+
       button.textContent = "Entrada confirmada";
-      CESUCAR.toast("Login realizado. Redirecionando...", "success", 1500);
+      CESUCAR.toast(`Login realizado como ${perfil}. Redirecionando...`, "success", 1500);
       setTimeout(() => window.location.href = "dashboard.html", 900);
     }
   </script>

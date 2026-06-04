@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Oferecer carona — CESUCAR</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="app-page">
+  <div class="bg-mesh"></div>
+  <div class="bg-grid"></div>
+
+  <nav class="navbar">
+    <a href="index.html" class="navbar-logo">
+      <img src="logo.png" alt="CESUCAR" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+      <span class="navbar-logo-fallback">CESUCAR</span>
+    </a>
+    <ul class="navbar-links">
+      <li><a href="index.html">Início</a></li>
+      <li><a href="dashboard.html">Dashboard</a></li>
+      <li><a href="procurar-carona.html">Procurar</a></li>
+      <li><a href="oferecer-carona.html" class="active">Oferecer</a></li>
+    </ul>
+    <div class="navbar-right">
+      <div class="theme-toggle"></div>
+      <a class="nav-notif-btn" href="dashboard.html" aria-label="Notificações">○<span class="notif-badge" id="notifBadge">0</span></a>
+      <div class="nav-user-chip" id="userChipBtn">
+        <div class="nav-user-avatar" data-user-avatar>CE</div>
+        <span data-user-name>Usuário</span>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Abrir menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="user-menu" id="userMenu">
+    <div class="user-menu-header">
+      <div class="user-menu-name" data-user-name>Usuário</div>
+      <div class="user-menu-email" id="userEmail"></div>
+    </div>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="procurar-carona.html">Procurar carona</a>
+    <a href="oferecer-carona.html">Oferecer carona</a>
+    <a href="#" data-logout>Sair</a>
+  </div>
+
+  <div class="mobile-drawer" id="mobileDrawer">
+    <a href="index.html">Início</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="procurar-carona.html">Procurar carona</a>
+    <a href="oferecer-carona.html">Oferecer carona</a>
+    <div class="drawer-btns">
+      <a href="#" data-logout class="btn btn-ghost">Sair</a>
+    </div>
+  </div>
+
+  <main class="page-body">
+    <header class="page-head reveal">
+      <div class="section-tag">Motorista</div>
+      <h1 class="page-title">Ofereça sua <span class="accent">carona</span></h1>
+      <p>Publique sua rota, defina o tipo de viagem e ajude outros estudantes.</p>
+    </header>
+
+    <section class="main-grid">
+      <!-- Formulário de publicação -->
+      <div>
+        <div class="section-title reveal"><span class="dot"></span>Nova carona</div>
+        <div class="auth-card reveal" style="margin-top:0;padding:28px 28px 24px;">
+          <form id="ofereceForm" onsubmit="publicar(event)" novalidate>
+
+            <!-- Tipo de viagem -->
+            <div class="form-group">
+              <label class="form-label">Tipo de viagem <span class="req">*</span></label>
+              <div class="role-selector">
+                <label class="role-option" id="tipo-ida-opt">
+                  <input type="radio" name="tipo" value="ida" checked />
+                  <span class="role-icon">→</span>
+                  <span class="role-label">Ida para o CESUCA</span>
+                  <span class="role-desc">Cidade → CESUCA</span>
+                </label>
+                <label class="role-option" id="tipo-volta-opt">
+                  <input type="radio" name="tipo" value="volta" />
+                  <span class="role-icon">←</span>
+                  <span class="role-label">Volta do CESUCA</span>
+                  <span class="role-desc">CESUCA → Cidade</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Rota gerada automaticamente pelo tipo -->
+            <div class="rota-preview" id="rotaPreview">
+              <!-- preenchido via JS -->
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" id="cidadeLabel">Sua cidade de origem <span class="req">*</span></label>
+              <select class="form-select" id="cidade" required>
+                <option value="">Selecione sua cidade</option>
+                <option>Cachoeirinha</option>
+                <option>Gravataí</option>
+                <option>Canoas</option>
+                <option>Alvorada</option>
+                <option>Porto Alegre</option>
+                <option>Viamão</option>
+                <option>Sapucaia do Sul</option>
+                <option>São Leopoldo</option>
+              </select>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label" for="data">Data <span class="req">*</span></label>
+                <input class="form-input" type="date" id="data" required />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="horario">Horário de saída <span class="req">*</span></label>
+                <input class="form-input" type="time" id="horario" required />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="veiculo">Veículo</label>
+              <input class="form-input" type="text" id="veiculo" placeholder="Ex.: Onix prata 2022" />
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label" for="vagas">Vagas disponíveis <span class="req">*</span></label>
+                <select class="form-select" id="vagas" required>
+                  <option value="1">1 vaga</option>
+                  <option value="2">2 vagas</option>
+                  <option value="3" selected>3 vagas</option>
+                  <option value="4">4 vagas</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="valor">Valor por pessoa (R$) <span class="req">*</span></label>
+                <input class="form-input" type="number" id="valor" placeholder="Ex.: 10" min="0" step="0.50" required />
+              </div>
+            </div>
+
+            <!-- Calculadora de custo integrada à API Flask -->
+            <div class="calc-box reveal">
+              <div class="section-title" style="margin-bottom:12px;"><span class="dot"></span>Calculadora de custo (API Flask)</div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="distancia">Distância (km)</label>
+                  <input class="form-input" type="number" id="distancia" placeholder="25" min="0" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="consumo">Consumo (km/L)</label>
+                  <input class="form-input" type="number" id="consumo" placeholder="12" min="1" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="precoCombustivel">Preço combustível (R$/L)</label>
+                  <input class="form-input" type="number" id="precoCombustivel" placeholder="6.00" min="0" step="0.01" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="passageiros">Passageiros</label>
+                  <input class="form-input" type="number" id="passageiros" placeholder="3" min="1" max="10" />
+                </div>
+              </div>
+              <button type="button" class="btn btn-ghost btn-sm" onclick="calcularCusto()">Calcular custo</button>
+              <div id="calcResult" class="calc-result" style="display:none;"></div>
+            </div>
+
+            <div class="form-actions" style="margin-top:24px;">
+              <a href="dashboard.html" class="btn btn-ghost">Cancelar</a>
+              <button type="submit" class="btn btn-primary" id="publicarBtn">Publicar carona</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Status da API Flask -->
+        <div class="side-card reveal" style="margin-top:20px;" id="apiStatusCard">
+          <div class="section-title"><span class="dot"></span>Status da API Python</div>
+          <div id="apiStatusContent">
+            <p class="ec-desc">Verificando conexão com o servidor Flask...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Minhas caronas publicadas -->
+      <aside id="gerenciar">
+        <div class="section-title reveal"><span class="dot"></span>Minhas caronas publicadas</div>
+        <div id="minhasCaronas"></div>
+        <div class="side-card reveal" style="margin-top:16px;">
+          <div class="section-title"><span class="dot"></span>Dicas para motoristas</div>
+          <ul class="ec-desc" style="padding-left:1rem;margin:0;line-height:1.8;">
+            <li>Publique com antecedência para mais reservas.</li>
+            <li>Informe o veículo para gerar confiança.</li>
+            <li>Use a calculadora para definir um valor justo.</li>
+            <li>Prefira rotas regulares para fidelizar passageiros.</li>
+          </ul>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-bottom">
+      <span>© 2026 CESUCAR — Centro Universitário CESUCA</span>
+      <a href="index.html">Página inicial</a>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script>
+    CESUCAR.requireAuth();
+
+    const user = CESUCAR.currentUser();
+    if (user) {
+      document.getElementById("userEmail").textContent = user.email || "";
+    }
+
+    document.getElementById("data").value = CESUCAR.today;
+    document.getElementById("horario").value = "07:30";
+
+    document.getElementById("userChipBtn").addEventListener("click", () => {
+      document.getElementById("userMenu").classList.toggle("open");
+    });
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest("#userChipBtn") && !event.target.closest("#userMenu")) {
+        document.getElementById("userMenu").classList.remove("open");
+      }
+    });
+
+    // Atualiza preview de rota e label de cidade conforme tipo selecionado
+    function atualizarRota() {
+      const tipo = document.querySelector('input[name="tipo"]:checked')?.value || "ida";
+      const cidade = document.getElementById("cidade").value;
+      const preview = document.getElementById("rotaPreview");
+      const label = document.getElementById("cidadeLabel");
+
+      if (tipo === "ida") {
+        label.innerHTML = 'Cidade de origem <span class="req">*</span>';
+        const origemText = cidade || "Sua cidade";
+        preview.innerHTML = `
+          <div class="rota-preview-row">
+            <span class="rota-ponto cidade">${origemText}</span>
+            <span class="rota-seta">→</span>
+            <span class="rota-ponto cesuca">CESUCA</span>
+          </div>`;
+      } else {
+        label.innerHTML = 'Cidade de destino <span class="req">*</span>';
+        const destinoText = cidade || "Sua cidade";
+        preview.innerHTML = `
+          <div class="rota-preview-row">
+            <span class="rota-ponto cesuca">CESUCA</span>
+            <span class="rota-seta">→</span>
+            <span class="rota-ponto cidade">${destinoText}</span>
+          </div>`;
+      }
+    }
+
+    // Destaque visual e atualização de rota ao trocar tipo
+    document.querySelectorAll('input[name="tipo"]').forEach((radio) => {
+      radio.addEventListener("change", () => {
+        document.querySelectorAll(".role-option").forEach((el) => el.classList.remove("selected"));
+        radio.closest(".role-option").classList.add("selected");
+        atualizarRota();
+      });
+    });
+    document.getElementById("cidade").addEventListener("change", atualizarRota);
+
+    document.querySelector('input[name="tipo"]:checked')
+      ?.closest(".role-option")
+      ?.classList.add("selected");
+    atualizarRota();
+
+    // Verificar status da API Flask
+    async function checkApiStatus() {
+      const content = document.getElementById("apiStatusContent");
+      const result = await CESUCAR.apiStatus();
+      if (result && result.status === "Online") {
+        content.innerHTML = `
+          <div class="activity-item">
+            <div class="activity-icon green">✓</div>
+            <div>
+              <div class="activity-text"><strong>${result.sistema}</strong> — ${result.status}</div>
+              <div class="activity-time">API Flask conectada em ${CESUCAR.API_URL}</div>
+            </div>
+          </div>
+        `;
+      } else {
+        content.innerHTML = `
+          <div class="activity-item">
+            <div class="activity-icon orange">!</div>
+            <div>
+              <div class="activity-text">API Flask não detectada</div>
+              <div class="activity-time">Execute: cd backend && python app.py</div>
+            </div>
+          </div>
+          <p class="ec-desc" style="margin-top:8px;font-size:0.8rem;">O sistema funciona normalmente — dados salvos localmente.</p>
+        `;
+      }
+    }
+
+    // Calculadora de custo via API Flask
+    async function calcularCusto() {
+      const distancia = parseFloat(document.getElementById("distancia").value);
+      const consumo = parseFloat(document.getElementById("consumo").value);
+      const preco = parseFloat(document.getElementById("precoCombustivel").value);
+      const passageiros = parseInt(document.getElementById("passageiros").value, 10);
+
+      if (!distancia || !consumo || !preco || !passageiros) {
+        CESUCAR.toast("Preencha todos os campos da calculadora.", "error");
+        return;
+      }
+
+      const result = await CESUCAR.apiCalcularCarona({
+        distancia,
+        consumo,
+        preco_combustivel: preco,
+        passageiros
+      });
+
+      const box = document.getElementById("calcResult");
+      if (result) {
+        box.style.display = "block";
+        box.innerHTML = `
+          <div class="calc-result-row">
+            <span>Custo total da viagem</span>
+            <strong>R$ ${result.custo_total.toFixed(2)}</strong>
+          </div>
+          <div class="calc-result-row">
+            <span>Valor por passageiro</span>
+            <strong class="accent">R$ ${result.valor_por_pessoa.toFixed(2)}</strong>
+          </div>
+        `;
+        // Sugerir o valor calculado no campo de valor
+        document.getElementById("valor").value = result.valor_por_pessoa.toFixed(2);
+        CESUCAR.toast("Valor sugerido preenchido automaticamente.", "success");
+      }
+    }
+
+    // Renderizar caronas do motorista atual
+    function renderMinhasCaronas() {
+      const rides = CESUCAR.getRides().filter(
+        (r) => r.driverId === user?.id
+      );
+      const container = document.getElementById("minhasCaronas");
+
+      if (!rides.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <span class="empty-state-icon">+</span>
+            <div class="empty-state-title">Nenhuma carona publicada</div>
+            <p>Publique sua primeira carona pelo formulário ao lado.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = rides.map((ride) => `
+        <article class="ride-card">
+          <div class="ride-info">
+            <div class="ride-route">${ride.origem} <span class="arrow">→</span> ${ride.destino}</div>
+            <div class="ride-meta">
+              ${ride.data} · ${ride.horario}
+              <span class="badge badge-${ride.tipo === 'ida' ? 'ida' : 'volta'}" style="margin-left:6px;">
+                ${ride.tipo === 'ida' ? '→ Ida' : '← Volta'}
+              </span>
+            </div>
+            <div class="ride-meta">${ride.veiculo} · ${ride.vagas} vagas · R$${ride.valor}</div>
+          </div>
+          <span class="badge badge-green">Ativa</span>
+        </article>
+      `).join("");
+    }
+
+    // Publicar carona
+    async function publicar(event) {
+      event.preventDefault();
+
+      const cidade = document.getElementById("cidade").value;
+      const data = document.getElementById("data").value;
+      const horario = document.getElementById("horario").value;
+      const vagas = document.getElementById("vagas").value;
+      const valor = document.getElementById("valor").value;
+      const tipo = document.querySelector('input[name="tipo"]:checked')?.value || "ida";
+      const veiculo = document.getElementById("veiculo").value.trim();
+
+      if (!cidade) return CESUCAR.toast("Selecione sua cidade.", "error");
+      if (!data) return CESUCAR.toast("Informe a data.", "error");
+      if (!horario) return CESUCAR.toast("Informe o horário.", "error");
+      if (!valor || parseFloat(valor) < 0) return CESUCAR.toast("Informe o valor por pessoa.", "error");
+
+      const btn = document.getElementById("publicarBtn");
+      CESUCAR.showLoading(btn, "Publicando...");
+      await new Promise((r) => setTimeout(r, 700));
+
+      // Determina origem e destino conforme regra universitária
+      const origem = tipo === "ida" ? cidade : "CESUCA";
+      const destino = tipo === "ida" ? "CESUCA" : cidade;
+
+      const rideData = { cidade, origem, destino, data, horario, vagas, valor, tipo, veiculo };
+
+      // Tentar publicar na API Flask (se disponível)
+      await CESUCAR.apiPublicarCarona({
+        motorista: user?.name || "Motorista",
+        origem, destino, data, horario, vagas, valor: parseFloat(valor), tipo, veiculo
+      });
+
+      // Salvar localmente sempre (addRide já aplica a regra CESUCA internamente)
+      CESUCAR.addRide(rideData);
+
+      CESUCAR.hideLoading(btn);
+      CESUCAR.toast(
+        tipo === "ida"
+          ? `Carona publicada! ${cidade} → CESUCA às ${horario}`
+          : `Carona publicada! CESUCA → ${cidade} às ${horario}`,
+        "success", 2500
+      );
+      renderMinhasCaronas();
+
+      // Limpar formulário
+      document.getElementById("cidade").value = "";
+      document.getElementById("valor").value = "";
+      document.getElementById("veiculo").value = "";
+      atualizarRota();
+    }
+
+    checkApiStatus();
+    renderMinhasCaronas();
+  </script>
+</body>
+</html>
