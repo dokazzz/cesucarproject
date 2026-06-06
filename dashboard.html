@@ -45,7 +45,7 @@
   <div class="user-menu" id="userMenu">
     <div class="user-menu-header">
       <div class="user-menu-name" data-user-name>Usuário</div>
-      <div class="user-menu-email" id="userEmail">email@cesucar.com</div>
+      <div class="user-menu-email" id="userRgm">RGM: —</div>
       <div id="userPerfilBadge" class="user-menu-perfil"></div>
     </div>
     <a href="dashboard.html">Dashboard</a>
@@ -155,7 +155,7 @@
       const greet = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
 
       document.getElementById("greetName").textContent = firstName;
-      document.getElementById("userEmail").textContent = user.email || "";
+      document.getElementById("userRgm").textContent = user.rgm ? "RGM: " + user.rgm : "";
       document.getElementById("greetSub").textContent =
         `${greet}. ${isMotorista ? "Gerencie suas caronas e veja as solicitações." : "Veja suas reservas, rotas disponíveis e notificações recentes."}`;
 

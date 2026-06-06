@@ -22,16 +22,17 @@
 
       <div class="demo-hint">
         <strong>Conta demo</strong>
-        Nome: <b>Demo</b> · Email: <b>admin@cesucar.com</b> · Senha: <b>123456</b>
+        Nome: <b>Demo</b> · RGM: <b>12345678</b> · Senha: <b>123456</b>
       </div>
 
       <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
         <div class="divider-row"><span>credenciais</span></div>
 
         <div class="form-group">
-          <label class="form-label" for="email">E-mail <span class="req">*</span></label>
-          <input class="form-input" type="email" id="email" placeholder="seu@email.com" value="admin@cesucar.com" autocomplete="email" required />
-          <span class="form-error" id="err-email"></span>
+          <label class="form-label" for="rgm">RGM <span class="req">*</span></label>
+          <input class="form-input" type="text" id="rgm" placeholder="00000000" value="12345678" inputmode="numeric" maxlength="8" autocomplete="username" required />
+          <span class="form-hint">8 dígitos numéricos — sem letras ou espaços.</span>
+          <span class="form-error" id="err-rgm"></span>
         </div>
 
         <div class="form-group">
@@ -97,43 +98,55 @@
       button.setAttribute("aria-label", visible ? "Mostrar senha" : "Ocultar senha");
     }
 
+    // Filtro: apenas dígitos no campo RGM
+    document.getElementById("rgm").addEventListener("input", function () {
+      this.value = this.value.replace(/\D/g, "").slice(0, 8);
+    });
+
     function forgotPwd(event) {
       event.preventDefault();
-      const email = document.getElementById("email").value.trim();
+      const rgm = document.getElementById("rgm").value.trim();
+      const rgmValido = /^\d{8}$/.test(rgm);
       CESUCAR.modal({
         icon: "↳",
         title: "Recuperar senha",
-        body: email
-          ? `Enviaremos um link de redefinição para <strong>${email}</strong>.`
-          : "Informe seu e-mail antes de recuperar a senha.",
-        confirmLabel: email ? "Enviar link" : "Ok",
-        cancel: !!email,
-        onConfirm: () => email && CESUCAR.toast("Link enviado para " + email, "success")
+        body: rgmValido
+          ? `Entre em contato com a administração informando seu RGM <strong>${rgm}</strong>.`
+          : "Informe seu RGM de 8 dígitos antes de solicitar recuperação.",
+        confirmLabel: "Ok",
+        cancel: false
       });
     }
 
     async function handleLogin(event) {
       event.preventDefault();
-      document.getElementById("err-email").textContent = "";
+      document.getElementById("err-rgm").textContent = "";
       document.getElementById("err-pw").textContent = "";
 
       const button = document.getElementById("loginBtn");
-      const email = document.getElementById("email").value.trim();
+      const rgm = document.getElementById("rgm").value.trim();
       const password = document.getElementById("password").value;
       const perfil = document.querySelector('input[name="perfil"]:checked')?.value || "passageiro";
 
-      if (!email) {
-        document.getElementById("err-email").textContent = "Informe seu e-mail.";
+      if (!rgm) {
+        document.getElementById("err-rgm").textContent = "Informe seu RGM.";
+        document.getElementById("rgm").focus();
+        return;
+      }
+      if (!/^\d{8}$/.test(rgm)) {
+        document.getElementById("err-rgm").textContent = "RGM deve conter exatamente 8 dígitos numéricos.";
+        document.getElementById("rgm").focus();
         return;
       }
       if (!password) {
         document.getElementById("err-pw").textContent = "Informe sua senha.";
+        document.getElementById("password").focus();
         return;
       }
 
       CESUCAR.showLoading(button, "Verificando...");
       await new Promise((resolve) => setTimeout(resolve, 650));
-      const result = CESUCAR.login(email, password);
+      const result = CESUCAR.login(rgm, password);
       CESUCAR.hideLoading(button);
 
       if (!result.ok) {

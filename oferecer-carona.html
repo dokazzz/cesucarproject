@@ -35,7 +35,7 @@
   <div class="user-menu" id="userMenu">
     <div class="user-menu-header">
       <div class="user-menu-name" data-user-name>Usuário</div>
-      <div class="user-menu-email" id="userEmail"></div>
+      <div class="user-menu-email" id="userRgm"></div>
     </div>
     <a href="dashboard.html">Dashboard</a>
     <a href="procurar-carona.html">Procurar carona</a>
@@ -215,7 +215,7 @@
 
     const user = CESUCAR.currentUser();
     if (user) {
-      document.getElementById("userEmail").textContent = user.email || "";
+      document.getElementById("userRgm").textContent = user.rgm ? "RGM: " + user.rgm : "";
     }
 
     document.getElementById("data").value = CESUCAR.today;

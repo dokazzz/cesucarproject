@@ -1,4 +1,4 @@
-"""
+3"""
 API Flask do sistema CESUCAR — Caronas Universitárias.
 
 Rotas disponíveis:

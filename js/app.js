@@ -7,7 +7,7 @@
   const demoUser = {
     id: 1,
     name: "Demo",
-    email: "admin@cesucar.com",
+    rgm: "12345678",
     curso: "Ciência da Computação",
     cidade: "Cachoeirinha",
     telefone: "(51) 99999-0000",
@@ -158,9 +158,9 @@
   // ------------------------------------------------------------------
 
   function seed() {
-    // Atualiza conta demo se o nome ainda for o antigo ("Ana Costa")
+    // Migra conta demo de e-mail para RGM, ou atualiza nome antigo
     const storedUser = read("currentUser", null);
-    if (storedUser && storedUser.email === "admin@cesucar.com" && storedUser.name !== "Demo") {
+    if (storedUser && (storedUser.email === "admin@cesucar.com" || (storedUser.id === 1 && !storedUser.rgm))) {
       write("currentUser", { ...demoUser, perfil: storedUser.perfil || "passageiro" });
     }
 
@@ -255,6 +255,14 @@
   // Autenticação
   // ------------------------------------------------------------------
 
+  function isValidRGM(rgm) {
+    return /^\d{8}$/.test(String(rgm || ""));
+  }
+
+  function getUsers() {
+    return read("users", []);
+  }
+
   function isLoggedIn() {
     return !!read("loggedIn", false);
   }
@@ -274,19 +282,47 @@
     }
   }
 
-  function login(email, password) {
-    const saved = read("currentUser", null);
-    const okDemo = normalize(email) === "admin@cesucar.com" && password === "123456";
-    // Conta customizada: e-mail salvo diferente do demo e senha com 6+ chars
-    const isCustom = saved && normalize(saved.email) !== "admin@cesucar.com";
-    const okSaved = isCustom && normalize(saved.email) === normalize(email) && password.length >= 6;
-
-    if (!okDemo && !okSaved) {
-      return { ok: false, error: "E-mail ou senha inválidos." };
+  function login(rgm, password) {
+    if (!isValidRGM(rgm)) {
+      return { ok: false, error: "RGM inválido. Deve conter exatamente 8 dígitos numéricos." };
+    }
+    if (!password) {
+      return { ok: false, error: "Informe sua senha." };
     }
 
-    // Conta demo sempre carrega demoUser (nunca dados antigos salvos)
-    write("currentUser", okSaved ? saved : demoUser);
+    // Conta demo
+    if (rgm === demoUser.rgm && password === "123456") {
+      write("currentUser", demoUser);
+      write("loggedIn", true);
+      return { ok: true };
+    }
+
+    // Usuários cadastrados
+    const users = getUsers();
+    const found = users.find((u) => u.rgm === rgm);
+    if (!found || found.password !== password) {
+      return { ok: false, error: "RGM ou senha inválidos." };
+    }
+
+    write("currentUser", found);
+    write("loggedIn", true);
+    return { ok: true };
+  }
+
+  function register(userData) {
+    if (!isValidRGM(userData.rgm)) {
+      return { ok: false, error: "RGM inválido. Deve conter exatamente 8 dígitos." };
+    }
+    if (userData.rgm === demoUser.rgm) {
+      return { ok: false, error: "Este RGM já está em uso." };
+    }
+    const users = getUsers();
+    if (users.some((u) => u.rgm === userData.rgm)) {
+      return { ok: false, error: "Este RGM já está cadastrado. Faça login ou use outro RGM." };
+    }
+    users.push(userData);
+    write("users", users);
+    write("currentUser", userData);
     write("loggedIn", true);
     return { ok: true };
   }
@@ -611,7 +647,9 @@
     currentUser,
     isLoggedIn,
     requireAuth,
+    isValidRGM,
     login,
+    register,
     logout,
     getRides,
     addRide,

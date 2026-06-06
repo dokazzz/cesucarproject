@@ -90,12 +90,13 @@
           <button type="button" class="btn btn-blue btn-block" onclick="nextStep(2)">Continuar</button>
         </section>
 
-        <!-- Etapa 2: Contato -->
+        <!-- Etapa 2: RGM e Contato -->
         <section class="form-step" id="step2" hidden>
           <div class="form-group">
-            <label class="form-label" for="email">E-mail <span class="req">*</span></label>
-            <input class="form-input" type="email" id="email" placeholder="seu@email.com" autocomplete="email" required />
-            <span class="form-hint">Pode ser e-mail pessoal ou institucional.</span>
+            <label class="form-label" for="rgm">RGM <span class="req">*</span></label>
+            <input class="form-input" type="text" id="rgm" placeholder="00000000" inputmode="numeric" maxlength="8" autocomplete="username" required />
+            <span class="form-hint">Registro Geral de Matrícula — exatamente 8 dígitos numéricos.</span>
+            <span class="form-error" id="err-rgm"></span>
           </div>
 
           <div class="form-group">
@@ -185,9 +186,15 @@
       }
 
       if (step === 3) {
-        const email = document.getElementById("email").value.trim();
+        const rgm = document.getElementById("rgm").value.trim();
         const phone = document.getElementById("telefone").value.trim();
-        if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return CESUCAR.toast("Informe um e-mail válido.", "error");
+        const errRgm = document.getElementById("err-rgm");
+        errRgm.textContent = "";
+        if (!rgm || !/^\d{8}$/.test(rgm)) {
+          errRgm.textContent = "O RGM deve conter exatamente 8 dígitos numéricos.";
+          document.getElementById("rgm").focus();
+          return;
+        }
         if (!phone || phone.length < 14) return CESUCAR.toast("Informe um telefone válido.", "error");
       }
 
@@ -197,6 +204,12 @@
     function prevStep(step) {
       setStep(step);
     }
+
+    // Filtro: apenas dígitos no campo RGM
+    document.getElementById("rgm").addEventListener("input", function () {
+      this.value = this.value.replace(/\D/g, "").slice(0, 8);
+      document.getElementById("err-rgm").textContent = "";
+    });
 
     document.getElementById("telefone").addEventListener("input", function () {
       let value = this.value.replace(/\D/g, "");
@@ -243,12 +256,14 @@
       await new Promise((resolve) => setTimeout(resolve, 800));
 
       const name = document.getElementById("nome").value.trim();
+      const rgm = document.getElementById("rgm").value.trim();
       const perfil = document.querySelector('input[name="perfil"]:checked')?.value || "passageiro";
 
       const userData = {
         id: Date.now(),
         name,
-        email: document.getElementById("email").value.trim(),
+        rgm,
+        password,
         curso: document.getElementById("curso").value,
         cidade: document.getElementById("cidade").value,
         telefone: document.getElementById("telefone").value,
@@ -259,9 +274,17 @@
         role: "both"
       };
 
-      CESUCAR._set("currentUser", userData);
-      CESUCAR._set("loggedIn", true);
+      const result = CESUCAR.register(userData);
       CESUCAR.hideLoading(button);
+
+      if (!result.ok) {
+        CESUCAR.toast(result.error, "error");
+        // Volta para etapa 2 para corrigir o RGM
+        setStep(2);
+        document.getElementById("err-rgm").textContent = result.error;
+        return;
+      }
+
       button.textContent = "Conta criada";
       CESUCAR.toast(`Bem-vindo, ${name.split(" ")[0]}! Conta criada como ${perfil}.`, "success", 2000);
       setTimeout(() => window.location.href = "dashboard.html", 1100);
