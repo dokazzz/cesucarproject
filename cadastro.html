@@ -5,6 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Cadastro — CESUCAR</title>
   <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .driver-section {
+      border: 1px solid var(--glass-border, #e2e8f0);
+      border-radius: 12px;
+      padding: 16px;
+      margin-top: 12px;
+      background: var(--hover-bg, #f8fafc);
+    }
+    .driver-section-title {
+      font-size: .8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--accent, #f97316);
+      margin-bottom: 12px;
+    }
+  </style>
 </head>
 <body class="auth-page">
   <div class="bg-mesh"></div>
@@ -28,9 +45,8 @@
 
       <form id="cadForm" onsubmit="handleCad(event)" novalidate>
 
-        <!-- Etapa 1: Dados pessoais + perfil -->
+        <!-- Etapa 1: Perfil + dados pessoais -->
         <section class="form-step" id="step1">
-          <!-- Seletor de perfil -->
           <div class="form-group">
             <label class="form-label">Você é <span class="req">*</span></label>
             <div class="role-selector">
@@ -51,7 +67,7 @@
 
           <div class="form-grid-2">
             <div class="form-group">
-              <label class="form-label" for="nome">Nome <span class="req">*</span></label>
+              <label class="form-label" for="nome">Nome completo <span class="req">*</span></label>
               <input class="form-input" type="text" id="nome" placeholder="Seu nome completo" autocomplete="name" required />
             </div>
             <div class="form-group">
@@ -59,42 +75,109 @@
               <select class="form-select" id="curso" required>
                 <option value="">Selecione</option>
                 <option>Administração</option>
+                <option>Análise e Desenvolvimento de Sistemas</option>
+                <option>Arquitetura e Urbanismo</option>
+                <option>Biomedicina</option>
                 <option>Ciência da Computação</option>
+                <option>Ciências Contábeis</option>
+                <option>Design de Interiores</option>
                 <option>Direito</option>
-                <option>Engenharia de Software</option>
-                <option>Sistemas de Informação</option>
-                <option>Pedagogia</option>
-                <option>Psicologia</option>
+                <option>Educação Física</option>
                 <option>Enfermagem</option>
+                <option>Engenharia Civil</option>
+                <option>Engenharia de Produção</option>
+                <option>Engenharia Mecânica</option>
+                <option>Estética e Cosmética</option>
+                <option>Farmácia</option>
+                <option>Fisioterapia</option>
+                <option>Fonoaudiologia</option>
+                <option>Gestão Comercial</option>
+                <option>Gestão da Produção Industrial</option>
+                <option>Gestão da Qualidade</option>
+                <option>Gestão da Tecnologia da Informação</option>
+                <option>Gestão Financeira</option>
+                <option>Logística</option>
+                <option>Marketing</option>
+                <option>Matemática</option>
+                <option>Medicina</option>
+                <option>Medicina Veterinária</option>
+                <option>Nutrição</option>
+                <option>Odontologia</option>
+                <option>Pedagogia</option>
+                <option>Processos Gerenciais</option>
+                <option>Psicologia</option>
+                <option>Publicidade e Propaganda</option>
                 <option>Outro</option>
               </select>
             </div>
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="cidade">Cidade <span class="req">*</span></label>
-            <select class="form-select" id="cidade" required>
-              <option value="">Selecione sua cidade</option>
-              <option>Cachoeirinha</option>
-              <option>Gravataí</option>
-              <option>Canoas</option>
-              <option>Alvorada</option>
-              <option>Porto Alegre</option>
-              <option>Viamão</option>
-              <option>Sapucaia do Sul</option>
-              <option>São Leopoldo</option>
-              <option>Outra</option>
-            </select>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label" for="cidade">Cidade <span class="req">*</span></label>
+              <select class="form-select" id="cidade" required onchange="onCidadeChange()">
+                <option value="">Selecione sua cidade</option>
+                <option>Cachoeirinha</option>
+                <option>Gravataí</option>
+                <option>Canoas</option>
+                <option>Alvorada</option>
+                <option>Porto Alegre</option>
+                <option>Viamão</option>
+                <option>Sapucaia do Sul</option>
+                <option>São Leopoldo</option>
+                <option>Outra</option>
+              </select>
+            </div>
+            <div class="form-group" id="bairroWrap" data-bairro-wrap hidden>
+              <label class="form-label" for="bairro">Bairro <span class="req">*</span></label>
+              <select class="form-select" id="bairro">
+                <option value="">Selecione primeiro a cidade</option>
+              </select>
+            </div>
           </div>
 
-          <button type="button" class="btn btn-blue btn-block" onclick="nextStep(2)">Continuar</button>
+          <!-- Dados do veículo (só motoristas) -->
+          <div id="vehicleSection" hidden>
+            <div class="driver-section">
+              <div class="driver-section-title">🚗 Informações do veículo</div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="form-label" for="vehicleBrand">Marca</label>
+                  <input class="form-input" type="text" id="vehicleBrand" placeholder="Ex.: Volkswagen" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="vehicleModel">Modelo</label>
+                  <input class="form-input" type="text" id="vehicleModel" placeholder="Ex.: Gol 2020" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="vehicleColor">Cor</label>
+                  <input class="form-input" type="text" id="vehicleColor" placeholder="Ex.: Prata" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="vehicleSeats">Lugares disponíveis</label>
+                  <select class="form-select" id="vehicleSeats">
+                    <option value="">—</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-blue btn-block" onclick="nextStep(2)" style="margin-top:18px;">Continuar</button>
         </section>
 
-        <!-- Etapa 2: RGM e Contato -->
+        <!-- Etapa 2: RGM e contato -->
         <section class="form-step" id="step2" hidden>
           <div class="form-group">
             <label class="form-label" for="rgm">RGM <span class="req">*</span></label>
-            <input class="form-input" type="text" id="rgm" placeholder="00000000" inputmode="numeric" maxlength="8" autocomplete="username" required />
+            <input class="form-input" type="text" id="rgm" placeholder="00000000"
+              inputmode="numeric" maxlength="8" autocomplete="username" required />
             <span class="form-hint">Registro Geral de Matrícula — exatamente 8 dígitos numéricos.</span>
             <span class="form-error" id="err-rgm"></span>
           </div>
@@ -102,6 +185,7 @@
           <div class="form-group">
             <label class="form-label" for="telefone">Telefone <span class="req">*</span></label>
             <input class="form-input" type="tel" id="telefone" placeholder="(51) 99999-0000" maxlength="15" required />
+            <span class="form-hint">Usado para contato via WhatsApp com outros usuários.</span>
           </div>
 
           <div class="form-actions">
@@ -145,25 +229,30 @@
       <div class="login-row mt-18">Já tem conta? <a href="login.html">Entrar</a></div>
     </section>
 
-    <p class="signup-row">
-      <a href="index.html">Voltar ao início</a>
-    </p>
+    <p class="signup-row"><a href="index.html">Voltar ao início</a></p>
   </main>
 
   <script src="js/app.js"></script>
   <script>
     let currentStep = 1;
 
-    // Destaque visual ao selecionar perfil
+    // Show/hide vehicle section based on selected role
     document.querySelectorAll('input[name="perfil"]').forEach((radio) => {
       radio.addEventListener("change", () => {
         document.querySelectorAll(".role-option").forEach((el) => el.classList.remove("selected"));
         radio.closest(".role-option").classList.add("selected");
+        const isDriver = radio.value === "motorista";
+        document.getElementById("vehicleSection").hidden = !isDriver;
       });
     });
     document.querySelector('input[name="perfil"]:checked')
-      ?.closest(".role-option")
-      ?.classList.add("selected");
+      ?.closest(".role-option")?.classList.add("selected");
+
+    // City → neighborhood cascade
+    function onCidadeChange() {
+      const city = document.getElementById("cidade").value;
+      CESUCAR.populateNeighborhoodSelect(city, "bairro");
+    }
 
     function setStep(next) {
       document.getElementById("step" + currentStep).hidden = true;
@@ -171,22 +260,26 @@
       currentStep = next;
       document.getElementById("step" + currentStep).hidden = false;
       document.getElementById("sd" + currentStep).classList.add("active");
-
-      for (let index = 1; index <= 3; index += 1) {
-        const dot = document.getElementById("sd" + index);
-        dot.classList.toggle("done", index < currentStep);
-      }
+      for (let i = 1; i <= 3; i++)
+        document.getElementById("sd" + i).classList.toggle("done", i < currentStep);
     }
 
     function nextStep(step) {
       if (step === 2) {
-        if (!document.getElementById("nome").value.trim()) return CESUCAR.toast("Informe seu nome.", "error");
-        if (!document.getElementById("curso").value) return CESUCAR.toast("Selecione seu curso.", "error");
-        if (!document.getElementById("cidade").value) return CESUCAR.toast("Selecione sua cidade.", "error");
+        if (!document.getElementById("nome").value.trim())
+          return CESUCAR.toast("Informe seu nome completo.", "error");
+        if (!document.getElementById("curso").value)
+          return CESUCAR.toast("Selecione seu curso.", "error");
+        if (!document.getElementById("cidade").value)
+          return CESUCAR.toast("Selecione sua cidade.", "error");
+        const perfil = document.querySelector('input[name="perfil"]:checked')?.value;
+        const bairro = document.getElementById("bairro").value;
+        const hasBairros = CESUCAR.getNeighborhoods(document.getElementById("cidade").value).length > 0;
+        if (hasBairros && !bairro)
+          return CESUCAR.toast("Selecione seu bairro.", "error");
       }
-
       if (step === 3) {
-        const rgm = document.getElementById("rgm").value.trim();
+        const rgm   = document.getElementById("rgm").value.trim();
         const phone = document.getElementById("telefone").value.trim();
         const errRgm = document.getElementById("err-rgm");
         errRgm.textContent = "";
@@ -195,98 +288,87 @@
           document.getElementById("rgm").focus();
           return;
         }
-        if (!phone || phone.length < 14) return CESUCAR.toast("Informe um telefone válido.", "error");
+        if (!phone || phone.replace(/\D/g,"").length < 10)
+          return CESUCAR.toast("Informe um telefone válido com DDD.", "error");
       }
-
       setStep(step);
     }
 
-    function prevStep(step) {
-      setStep(step);
-    }
+    function prevStep(step) { setStep(step); }
 
-    // Filtro: apenas dígitos no campo RGM
     document.getElementById("rgm").addEventListener("input", function () {
       this.value = this.value.replace(/\D/g, "").slice(0, 8);
       document.getElementById("err-rgm").textContent = "";
     });
 
     document.getElementById("telefone").addEventListener("input", function () {
-      let value = this.value.replace(/\D/g, "");
-      if (value.length <= 10) value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3");
-      else value = value.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3");
-      this.value = value.trim().replace(/-$/, "");
+      let v = this.value.replace(/\D/g, "");
+      if (v.length <= 10) v = v.replace(/(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3");
+      else v = v.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3");
+      this.value = v.trim().replace(/-$/, "");
     });
 
     document.getElementById("senha").addEventListener("input", function () {
-      const value = this.value;
+      const v = this.value;
       let score = 0;
-      if (value.length >= 6) score += 1;
-      if (value.length >= 10) score += 1;
-      if (/[A-Z]/.test(value) && /[0-9]/.test(value)) score += 1;
-      if (/[^A-Za-z0-9]/.test(value)) score += 1;
-
-      const colors = ["#dc4c4c", "#f4b942", "#2f9e83", "#167a65"];
-      const labels = ["fraca", "razoável", "boa", "forte"];
-
-      for (let index = 1; index <= 4; index += 1) {
-        document.getElementById("sb" + index).style.background =
-          index <= score ? colors[score - 1] : "var(--glass-border)";
-      }
-
-      document.getElementById("strength-label").textContent = score ? "Senha " + labels[score - 1] : "Digite a senha";
+      if (v.length >= 6)  score++;
+      if (v.length >= 10) score++;
+      if (/[A-Z]/.test(v) && /[0-9]/.test(v)) score++;
+      if (/[^A-Za-z0-9]/.test(v)) score++;
+      const colors = ["#dc4c4c","#f4b942","#2f9e83","#167a65"];
+      const labels = ["fraca","razoável","boa","forte"];
+      for (let i = 1; i <= 4; i++)
+        document.getElementById("sb" + i).style.background =
+          i <= score ? colors[score - 1] : "var(--glass-border)";
+      document.getElementById("strength-label").textContent =
+        score ? "Senha " + labels[score - 1] : "Digite a senha";
     });
 
     async function handleCad(event) {
       event.preventDefault();
       const password = document.getElementById("senha").value;
-      const confirm = document.getElementById("senha2").value;
-      const error = document.getElementById("err-senha2");
-      error.textContent = "";
+      const confirm  = document.getElementById("senha2").value;
+      const errSenha2 = document.getElementById("err-senha2");
+      errSenha2.textContent = "";
 
-      if (password.length < 6) return CESUCAR.toast("A senha precisa ter pelo menos 6 caracteres.", "error");
-      if (password !== confirm) {
-        error.textContent = "As senhas não coincidem.";
-        return;
-      }
-      if (!document.getElementById("terms").checked) return CESUCAR.toast("Aceite os termos para continuar.", "error");
+      if (password.length < 6)
+        return CESUCAR.toast("A senha precisa ter pelo menos 6 caracteres.", "error");
+      if (password !== confirm) { errSenha2.textContent = "As senhas não coincidem."; return; }
+      if (!document.getElementById("terms").checked)
+        return CESUCAR.toast("Aceite os termos para continuar.", "error");
 
-      const button = document.getElementById("cadBtn");
-      CESUCAR.showLoading(button, "Criando conta...");
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const btn = document.getElementById("cadBtn");
+      CESUCAR.showLoading(btn, "Criando conta...");
 
-      const name = document.getElementById("nome").value.trim();
-      const rgm = document.getElementById("rgm").value.trim();
       const perfil = document.querySelector('input[name="perfil"]:checked')?.value || "passageiro";
-
-      const userData = {
-        id: Date.now(),
-        name,
-        rgm,
+      const result = await CESUCAR.register({
+        name:          document.getElementById("nome").value.trim(),
+        rgm:           document.getElementById("rgm").value.trim(),
         password,
-        curso: document.getElementById("curso").value,
-        cidade: document.getElementById("cidade").value,
-        telefone: document.getElementById("telefone").value,
-        avatar: CESUCAR.initials(name),
-        rating: "5.0",
-        trips: 0,
         perfil,
-        role: "both"
-      };
+        curso:         document.getElementById("curso").value,
+        cidade:        document.getElementById("cidade").value,
+        bairro:        document.getElementById("bairro").value || null,
+        telefone:      document.getElementById("telefone").value,
+        vehicle_brand: document.getElementById("vehicleBrand").value.trim() || null,
+        vehicle_model: document.getElementById("vehicleModel").value.trim() || null,
+        vehicle_color: document.getElementById("vehicleColor").value.trim() || null,
+        vehicle_seats: document.getElementById("vehicleSeats").value || null,
+      });
 
-      const result = CESUCAR.register(userData);
-      CESUCAR.hideLoading(button);
+      CESUCAR.hideLoading(btn);
 
       if (!result.ok) {
         CESUCAR.toast(result.error, "error");
-        // Volta para etapa 2 para corrigir o RGM
-        setStep(2);
-        document.getElementById("err-rgm").textContent = result.error;
+        if (result.error.toLowerCase().includes("rgm")) {
+          setStep(2);
+          document.getElementById("err-rgm").textContent = result.error;
+        }
         return;
       }
 
-      button.textContent = "Conta criada";
-      CESUCAR.toast(`Bem-vindo, ${name.split(" ")[0]}! Conta criada como ${perfil}.`, "success", 2000);
+      btn.textContent = "Conta criada!";
+      CESUCAR.toast("Bem-vindo! Conta criada com sucesso.", "success", 2000);
       setTimeout(() => window.location.href = "dashboard.html", 1100);
     }
   </script>

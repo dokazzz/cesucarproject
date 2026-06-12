@@ -1,0 +1,95 @@
+"""
+JWT authentication middleware for FastAPI.
+
+Provides FastAPI dependency functions:
+  - get_current_user()  → requires a valid Bearer token
+  - require_role()      → requires specific role(s)
+"""
+from __future__ import annotations
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from database.connection import get_db
+from database.models.user import User
+from database.repositories.user_repository import UserRepository
+from services.auth_service import AuthError, AuthService
+
+from sqlalchemy.orm import Session
+
+_bearer = HTTPBearer(auto_error=False)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    db: Session = Depends(get_db),
+) -> User:
+    """
+    FastAPI dependency — extract and validate the Bearer JWT.
+
+    Injects the authenticated User model into route handlers.
+    Raises HTTP 401 if no token or invalid token.
+    """
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de autenticação não fornecido.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    try:
+        payload = AuthService.decode_token(credentials.credentials)
+        # sub is stored as a UUID string — do NOT cast to int
+        user_id: str = payload["sub"]
+    except (AuthError, KeyError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido ou expirado.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = UserRepository(db).find_by_id(user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuário não encontrado.",
+        )
+    return user
+
+
+def get_optional_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """Like get_current_user but returns None instead of raising on missing token."""
+    if credentials is None:
+        return None
+    try:
+        return get_current_user(credentials, db)
+    except HTTPException:
+        return None
+
+
+def require_role(*roles: str):
+    """
+    Factory that returns a FastAPI dependency enforcing one of the given roles.
+
+    Role strings are compared case-insensitively so callers can use either
+    lowercase ("admin") or uppercase ("ADMIN") — both work.
+
+    Usage:
+        @router.get("/admin/users")
+        def list_users(user = Depends(require_role("admin"))):
+            ...
+    """
+    normalized = {r.upper() for r in roles}
+
+    def _dependency(current_user: User = Depends(get_current_user)) -> User:
+        # current_user.role is a UserRole enum whose .value is uppercase ("ADMIN")
+        if current_user.role.value.upper() not in normalized:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Acesso negado. Permissão insuficiente.",
+            )
+        return current_user
+
+    return _dependency

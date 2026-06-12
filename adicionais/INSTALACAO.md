@@ -49,10 +49,10 @@ Saída esperada:
 ```
   CESUCAR API
   5 caronas de demonstração carregadas.
-  Acesse: http://localhost:5000/status
+  Acesse: http://localhost:5000/status ou http://localhost:8000/status 
 ```
 
-O servidor fica disponível em `http://localhost:5000`.
+O servidor fica disponível em `http://localhost:5000` ou `http://localhost:8080`.
 
 ---
 

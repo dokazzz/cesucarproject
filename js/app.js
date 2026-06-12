@@ -1,443 +1,518 @@
+/**
+ * CESUCAR — Frontend API client and UI utilities.
+ * All data comes from the real FastAPI backend at API_URL.
+ * No mock data. Authentication uses JWT Bearer tokens.
+ */
 (function () {
-  const KEY = "cesucar:";
-  const API_URL = "http://localhost:5000";
+  "use strict";
+
+  const _local = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  const API_URL = _local
+    ? "http://localhost:8000/api"
+    : "https://SEU-BACKEND.railway.app/api";
+  const TOKEN_KEY = "cesucar:token";
+  const USER_KEY = "cesucar:user";
+  const THEME_KEY = "cesucar:theme";
+
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 
-  const demoUser = {
-    id: 1,
-    name: "Demo",
-    rgm: "12345678",
-    curso: "Ciência da Computação",
-    cidade: "Cachoeirinha",
-    telefone: "(51) 99999-0000",
-    avatar: "DM",
-    rating: "4.9",
-    trips: 18,
-    perfil: "passageiro",
-    role: "both"
+  // ── City / Neighborhood data ─────────────────────────────────────────────────
+
+  const CIDADES_BAIRROS = {
+    "Cachoeirinha": [
+      "Centro", "Parque Amador", "Morada do Vale", "Parque dos Anjos",
+      "Vila Rica", "Mato Grande", "Santa Cruz", "Fátima", "São Jorge",
+      "Estância Velha", "Paineiras", "Cohab B", "Jardim América",
+    ],
+    "Gravataí": [
+      "Centro", "Morada do Vale", "Parque dos Anjos", "Santa Cruz",
+      "São Marcos", "Bom Princípio", "Ipiranga", "Passo das Pedras",
+      "Parque Florestal", "Neópolis", "Timbauva",
+    ],
+    "Canoas": [
+      "Centro", "Mathias Velho", "Niterói", "Harmonia",
+      "Rio Branco", "Nossa Senhora das Graças", "Igara",
+      "São Luís", "Marechal Rondon", "Fátima", "Guajuviras",
+    ],
+    "Alvorada": [
+      "Centro", "Presidente Vargas", "Harmonia", "São Marcos",
+      "Jardim Alvorada", "Santa Cecília", "Bela Vista",
+    ],
+    "Porto Alegre": [
+      "Centro Histórico", "Boa Vista", "Petrópolis", "Passo da Areia",
+      "Sarandi", "Rubem Berta", "Protásio Alves", "Bom Jesus",
+      "Jardim Lindóia", "Passo das Pedras", "São Geraldo", "Anchieta",
+    ],
+    "Viamão": [
+      "Centro", "Parque Três Lagos", "Jardim das Acácias",
+      "Itapuã", "São Lucas", "Vista Alegre",
+    ],
+    "Sapucaia do Sul": [
+      "Centro", "Braga", "Vargas", "Santos Dumont",
+      "Jardim América", "Piratini",
+    ],
+    "São Leopoldo": [
+      "Centro", "Rio dos Sinos", "Morro do Espelho",
+      "Vicentina", "São José", "Scharlau",
+    ],
   };
 
-  // Todas as rotas seguem o padrão universitário: Cidade ↔ CESUCA
-  const demoRides = [
-    {
-      id: 101,
-      driverId: 2,
-      driver: "João Silva",
-      driverAvatar: "JS",
-      driverRating: 4.9,
-      curso: "Engenharia de Software",
-      origem: "Cachoeirinha",
-      destino: "CESUCA",
-      data: today,
-      horario: "07:20",
-      veiculo: "Onix prata",
-      placa: "ABC-1234",
-      vagas: 3,
-      valor: 10,
-      tipo: "ida"
-    },
-    {
-      id: 102,
-      driverId: 3,
-      driver: "Pedro Martins",
-      driverAvatar: "PM",
-      driverRating: 4.8,
-      curso: "Administração",
-      origem: "Gravataí",
-      destino: "CESUCA",
-      data: today,
-      horario: "08:10",
-      veiculo: "HB20 branco",
-      placa: "DEF-5678",
-      vagas: 2,
-      valor: 12,
-      tipo: "ida"
-    },
-    {
-      id: 103,
-      driverId: 4,
-      driver: "Marina Souza",
-      driverAvatar: "MS",
-      driverRating: 5,
-      curso: "Direito",
-      origem: "CESUCA",
-      destino: "Canoas",
-      data: today,
-      horario: "18:30",
-      veiculo: "Argo vermelho",
-      placa: "GHI-9012",
-      vagas: 4,
-      valor: 8,
-      tipo: "volta"
-    },
-    {
-      id: 104,
-      driverId: 5,
-      driver: "Lucas Pereira",
-      driverAvatar: "LP",
-      driverRating: 4.7,
-      curso: "Sistemas de Informação",
-      origem: "CESUCA",
-      destino: "Alvorada",
-      data: today,
-      horario: "19:10",
-      veiculo: "Gol azul",
-      placa: "JKL-3456",
-      vagas: 3,
-      valor: 15,
-      tipo: "volta"
-    },
-    {
-      id: 105,
-      driverId: 6,
-      driver: "Bianca Rocha",
-      driverAvatar: "BR",
-      driverRating: 4.9,
-      curso: "Psicologia",
-      origem: "Canoas",
-      destino: "CESUCA",
-      data: tomorrow,
-      horario: "07:00",
-      veiculo: "Fit cinza",
-      placa: "MNO-7890",
-      vagas: 2,
-      valor: 10,
-      tipo: "ida"
+  /** Returns sorted neighborhood list for a city, or empty array. */
+  function getNeighborhoods(city) {
+    return CIDADES_BAIRROS[city] || [];
+  }
+
+  /**
+   * Populate a <select> element with neighborhoods for the given city.
+   * @param {string} city
+   * @param {string} selectId  — id of the <select> to populate
+   * @param {string} [current] — pre-select this value if present
+   */
+  function populateNeighborhoodSelect(city, selectId, current) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    const bairros = getNeighborhoods(city);
+    if (!bairros.length) {
+      sel.innerHTML = '<option value="">Selecione primeiro a cidade</option>';
+      sel.closest("[data-bairro-wrap]")?.setAttribute("hidden", "");
+      return;
     }
-  ];
-
-  const demoNotifications = [
-    { id: 1, text: "João confirmou a carona Cachoeirinha → CESUCA às 07:20.", time: "Agora", read: false },
-    { id: 2, text: "Marina publicou Canoas → CESUCA às 18:30 com 4 vagas.", time: "2h atrás", read: false },
-    { id: 3, text: "Sua conta está verificada na comunidade CESUCA.", time: "Ontem", read: true }
-  ];
-
-  // ------------------------------------------------------------------
-  // Persistência (localStorage)
-  // ------------------------------------------------------------------
-
-  function read(name, fallback) {
-    try {
-      const raw = localStorage.getItem(KEY + name);
-      return raw === null ? fallback : JSON.parse(raw);
-    } catch {
-      return fallback;
-    }
+    sel.innerHTML =
+      '<option value="">Selecione o bairro</option>' +
+      bairros.map((b) => `<option${b === current ? " selected" : ""}>${b}</option>`).join("");
+    sel.closest("[data-bairro-wrap]")?.removeAttribute("hidden");
   }
 
-  function write(name, value) {
-    localStorage.setItem(KEY + name, JSON.stringify(value));
-    return value;
+  // ── Token & User cache ──────────────────────────────────────────────────────
+
+  function getToken() { return localStorage.getItem(TOKEN_KEY); }
+  function setToken(t) { localStorage.setItem(TOKEN_KEY, t); }
+  function clearAuth() {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
   }
-
-  // ------------------------------------------------------------------
-  // Utilitários
-  // ------------------------------------------------------------------
-
-  function normalize(value) {
-    return String(value || "")
-      .normalize("NFD")
-      .replace(/[̀-ͯ]/g, "")
-      .toLowerCase()
-      .trim();
-  }
-
-  function initials(name) {
-    return String(name || "CE")
-      .split(" ")
-      .filter(Boolean)
-      .map((part) => part[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  }
-
-  // ------------------------------------------------------------------
-  // Seed (dados iniciais)
-  // ------------------------------------------------------------------
-
-  function seed() {
-    // Migra conta demo de e-mail para RGM, ou atualiza nome antigo
-    const storedUser = read("currentUser", null);
-    if (storedUser && (storedUser.email === "admin@cesucar.com" || (storedUser.id === 1 && !storedUser.rgm))) {
-      write("currentUser", { ...demoUser, perfil: storedUser.perfil || "passageiro" });
-    }
-
-    // Força reseed se os dados ainda usam rotas cidade→cidade (versão antiga)
-    const storedRides = read("rides", null);
-    const needsReseed = !storedRides || storedRides.some(
-      (r) => r.destino !== "CESUCA" && r.origem !== "CESUCA"
-    );
-    if (needsReseed) write("rides", demoRides);
-    // Reseed notifications se ainda usam texto antigo (sem CESUCA)
-    const storedNotifs = read("notifications", null);
-    if (!storedNotifs || storedNotifs.some((n) => n.text.includes("Porto Alegre"))) {
-      write("notifications", demoNotifications);
-    }
-  }
-
-  // ------------------------------------------------------------------
-  // Caronas
-  // ------------------------------------------------------------------
-
-  function getStoredRides() {
-    seed();
-    return read("rides", []);
-  }
-
-  function getReservations() {
-    return read("reservations", []);
-  }
-
-  function enrichRide(ride) {
-    const reservedCount = getReservations().filter((r) => r.rideId === ride.id).length;
-    return {
-      ...ride,
-      vagasDisp: Math.max(0, ride.vagas - reservedCount)
-    };
-  }
-
-  function getRides(filters = {}) {
-    let rides = getStoredRides().map(enrichRide);
-
-    if (filters.origem) {
-      const q = normalize(filters.origem);
-      rides = rides.filter((ride) => normalize(ride.origem).includes(q));
-    }
-
-    if (filters.destino) {
-      const q = normalize(filters.destino);
-      rides = rides.filter((ride) => normalize(ride.destino).includes(q));
-    }
-
-    if (filters.data) {
-      rides = rides.filter((ride) => ride.data === filters.data);
-    }
-
-    if (filters.tipo && filters.tipo !== "todos") {
-      rides = rides.filter((ride) => ride.tipo === filters.tipo);
-    }
-
-    return rides.sort((a, b) => a.horario.localeCompare(b.horario));
-  }
-
-  function addRide(rideData) {
-    const rides = getStoredRides();
-    const tipo = rideData.tipo || "ida";
-    // Garante o padrão universitário: Cidade → CESUCA (ida) ou CESUCA → Cidade (volta)
-    const origem = tipo === "ida" ? rideData.cidade : "CESUCA";
-    const destino = tipo === "ida" ? "CESUCA" : rideData.cidade;
-    const user = currentUser();
-    const newRide = {
-      id: Date.now(),
-      driverId: user?.id || 0,
-      driver: user?.name || "Motorista",
-      driverAvatar: user?.avatar || initials(user?.name || ""),
-      driverRating: parseFloat(user?.rating || "5.0"),
-      curso: user?.curso || "",
-      origem,
-      destino,
-      data: rideData.data,
-      horario: rideData.horario,
-      veiculo: rideData.veiculo || "",
-      placa: rideData.placa || "",
-      vagas: parseInt(rideData.vagas, 10) || 3,
-      valor: parseFloat(rideData.valor) || 0,
-      tipo
-    };
-    rides.push(newRide);
-    write("rides", rides);
-    return newRide;
-  }
-
-  // ------------------------------------------------------------------
-  // Autenticação
-  // ------------------------------------------------------------------
-
-  function isValidRGM(rgm) {
-    return /^\d{8}$/.test(String(rgm || ""));
-  }
-
-  function getUsers() {
-    return read("users", []);
-  }
-
-  function isLoggedIn() {
-    return !!read("loggedIn", false);
-  }
+  function cacheUser(user) { localStorage.setItem(USER_KEY, JSON.stringify(user)); }
 
   function currentUser() {
-    return isLoggedIn() ? read("currentUser", demoUser) : null;
+    try { return JSON.parse(localStorage.getItem(USER_KEY)); } catch { return null; }
   }
-
+  function isLoggedIn() { return !!getToken(); }
+  function requireAuth() {
+    if (!isLoggedIn()) window.location.href = "login.html";
+  }
+  function isValidRGM(rgm) { return /^\d{8}$/.test(String(rgm || "")); }
+  function initials(name) {
+    return String(name || "CE").split(" ").filter(Boolean)
+      .map((p) => p[0]).join("").toUpperCase().slice(0, 2);
+  }
   function getUserPerfil() {
     const user = currentUser();
-    return user?.perfil || "passageiro";
+    return user?.perfil || user?.role || "passenger";
   }
 
-  function requireAuth() {
-    if (!isLoggedIn()) {
-      window.location.href = "login.html";
+  // ── Core API fetch ──────────────────────────────────────────────────────────
+
+  async function apiFetch(path, options = {}) {
+    const token = getToken();
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    };
+
+    let response;
+    try {
+      response = await fetch(API_URL + path, { ...options, headers });
+    } catch {
+      throw {
+        status: 0,
+        error: "Falha na conexão com o servidor. Verifique se o backend está rodando em " +
+          API_URL.replace("/api", ""),
+      };
     }
+
+    if (response.status === 401) {
+      clearAuth();
+      if (!window.location.pathname.endsWith("login.html"))
+        window.location.href = "login.html";
+      return null;
+    }
+
+    let data;
+    try { data = await response.json(); } catch { data = {}; }
+
+    if (!response.ok) {
+      throw {
+        status: response.status,
+        error: data.detail || data.message || data.error || "Erro na requisição.",
+      };
+    }
+    return data;
   }
 
-  function login(rgm, password) {
-    if (!isValidRGM(rgm)) {
-      return { ok: false, error: "RGM inválido. Deve conter exatamente 8 dígitos numéricos." };
-    }
-    if (!password) {
-      return { ok: false, error: "Informe sua senha." };
-    }
+  // ── Authentication ──────────────────────────────────────────────────────────
 
-    // Conta demo
-    if (rgm === demoUser.rgm && password === "123456") {
-      write("currentUser", demoUser);
-      write("loggedIn", true);
-      return { ok: true };
-    }
-
-    // Usuários cadastrados
-    const users = getUsers();
-    const found = users.find((u) => u.rgm === rgm);
-    if (!found || found.password !== password) {
-      return { ok: false, error: "RGM ou senha inválidos." };
-    }
-
-    write("currentUser", found);
-    write("loggedIn", true);
-    return { ok: true };
-  }
-
-  function register(userData) {
-    if (!isValidRGM(userData.rgm)) {
+  async function login(rgm, password) {
+    if (!isValidRGM(rgm))
       return { ok: false, error: "RGM inválido. Deve conter exatamente 8 dígitos." };
+    if (!password)
+      return { ok: false, error: "Informe sua senha." };
+    try {
+      const data = await apiFetch("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ rgm, password }),
+      });
+      if (!data) return { ok: false, error: "Erro de autenticação." };
+      setToken(data.token);
+      cacheUser(data.user);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.error || "RGM ou senha inválidos." };
     }
-    if (userData.rgm === demoUser.rgm) {
-      return { ok: false, error: "Este RGM já está em uso." };
+  }
+
+  async function register(userData) {
+    if (!isValidRGM(userData.rgm))
+      return { ok: false, error: "RGM inválido. Deve conter exatamente 8 dígitos." };
+    try {
+      const data = await apiFetch("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          full_name:      userData.name || userData.full_name,
+          rgm:            userData.rgm,
+          password:       userData.password,
+          confirm_password: userData.password,
+          role:           userData.perfil === "motorista" ? "driver" : "passenger",
+          course:         userData.curso || null,
+          city:           userData.cidade || null,
+          neighborhood:   userData.bairro || null,
+          phone:          userData.telefone || null,
+          vehicle_model:  userData.vehicle_model || null,
+          vehicle_brand:  userData.vehicle_brand || null,
+          vehicle_color:  userData.vehicle_color || null,
+          vehicle_seats:  userData.vehicle_seats ? parseInt(userData.vehicle_seats, 10) : null,
+        }),
+      });
+      if (!data) return { ok: false, error: "Erro no cadastro." };
+      setToken(data.token);
+      cacheUser(data.user);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.error || "Erro ao criar conta." };
     }
-    const users = getUsers();
-    if (users.some((u) => u.rgm === userData.rgm)) {
-      return { ok: false, error: "Este RGM já está cadastrado. Faça login ou use outro RGM." };
-    }
-    users.push(userData);
-    write("users", users);
-    write("currentUser", userData);
-    write("loggedIn", true);
-    return { ok: true };
   }
 
   function logout(event) {
     if (event) event.preventDefault();
-    write("loggedIn", false);
+    clearAuth();
     toast("Você saiu da plataforma.", "info");
-    setTimeout(() => {
-      window.location.href = "login.html";
-    }, 500);
+    setTimeout(() => { window.location.href = "login.html"; }, 500);
   }
 
-  // ------------------------------------------------------------------
-  // Reservas
-  // ------------------------------------------------------------------
+  // ── Rides ───────────────────────────────────────────────────────────────────
 
-  function reserveRide(id) {
-    const ride = getRides().find((item) => item.id === id);
-    if (!ride) return { ok: false, error: "Carona não encontrada." };
-    if (ride.vagasDisp <= 0) return { ok: false, error: "Essa carona está sem vagas." };
+  function _tipoToTripType(tipo) {
+    return tipo === "volta" ? "RETURNING_HOME" : "GOING_TO_CESUCA";
+  }
 
-    const reservations = getReservations();
-    if (reservations.some((item) => item.rideId === id)) {
-      return { ok: false, error: "Você já reservou essa carona." };
+  async function getRides(filters = {}) {
+    const params = new URLSearchParams();
+    const city = filters.cidade || filters.origem;
+    if (city) params.set("departure_city", city);
+    if (filters.data) params.set("date", filters.data);
+    if (filters.tipo && filters.tipo !== "todos")
+      params.set("trip_type", _tipoToTripType(filters.tipo));
+    try {
+      const result = await apiFetch("/rides?" + params.toString());
+      return Array.isArray(result) ? result : [];
+    } catch { return []; }
+  }
+
+  async function addRide(rideData) {
+    try {
+      return await apiFetch("/rides", {
+        method: "POST",
+        body: JSON.stringify(rideData),
+      });
+    } catch (err) {
+      toast(err.error || "Erro ao publicar carona.", "error");
+      return null;
     }
-
-    reservations.push({
-      id: Date.now(),
-      rideId: id,
-      createdAt: new Date().toISOString(),
-      ride
-    });
-    write("reservations", reservations);
-    toast("Reserva confirmada.", "success");
-    return { ok: true };
   }
 
-  function cancelReservation(rideId) {
-    write("reservations", getReservations().filter((item) => item.rideId !== rideId));
-    toast("Reserva cancelada.", "info");
+  async function getMyRides() {
+    try {
+      const result = await apiFetch("/my-rides");
+      return Array.isArray(result) ? result : [];
+    } catch { return []; }
   }
 
-  // ------------------------------------------------------------------
-  // Notificações
-  // ------------------------------------------------------------------
-
-  function getNotifications() {
-    seed();
-    return read("notifications", []);
+  async function getMyRequests() {
+    try {
+      const result = await apiFetch("/my-requests");
+      return Array.isArray(result) ? result : [];
+    } catch { return []; }
   }
 
-  function markAllRead() {
-    write("notifications", getNotifications().map((item) => ({ ...item, read: true })));
-    updateNotifBadge();
+  async function getReservations() { return getMyRequests(); }
+
+  async function reserveRide(rideId, rideData) {
+    try {
+      await apiFetch(`/rides/${rideId}/request`, { method: "POST" });
+      toast("Reserva confirmada!", "success");
+      // WhatsApp prompt — only when driver has a phone and ride data is provided
+      if (rideData && rideData.driver_phone) {
+        const user = currentUser();
+        if (user) {
+          setTimeout(() => {
+            modal({
+              icon: "💬",
+              title: "Falar com o motorista",
+              body: `Reserva confirmada! Deseja entrar em contato com <strong>${rideData.driver || "o motorista"}</strong> pelo WhatsApp?`,
+              confirmLabel: "Abrir WhatsApp",
+              onConfirm: () => {
+                openWhatsApp(rideData.driver_phone, rideData, user);
+              },
+            });
+          }, 400);
+        }
+      }
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.error || "Erro ao reservar." };
+    }
   }
 
-  function updateNotifBadge() {
-    const count = getNotifications().filter((item) => !item.read).length;
+  async function updateMe(fields) {
+    try {
+      const data = await apiFetch("/auth/me", {
+        method: "PATCH",
+        body: JSON.stringify(fields),
+      });
+      if (data) cacheUser(data);
+      return { ok: true, user: data };
+    } catch (e) {
+      return { ok: false, error: e.message };
+    }
+  }
+
+  async function cancelReservation(rideId) {
+    try {
+      await apiFetch(`/rides/${rideId}/request`, { method: "DELETE" });
+      toast("Reserva cancelada.", "info");
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.error || "Erro ao cancelar." };
+    }
+  }
+
+  // ── WhatsApp integration ─────────────────────────────────────────────────────
+
+  function openWhatsApp(phone, ride, passenger) {
+    if (!phone) { toast("O motorista não informou telefone.", "info"); return; }
+    const digits = String(phone).replace(/\D/g, "");
+    const number = digits.startsWith("55") ? digits : "55" + digits;
+    const passengerName = passenger?.full_name || passenger?.name || "Estudante";
+    const passengerRgm  = passenger?.rgm || "—";
+    const origem   = ride?.origem  || ride?.departure_city || "—";
+    const destino  = ride?.destino || ride?.destination    || "—";
+    const data     = ride?.data    || "—";
+    const horario  = ride?.horario || "—";
+    const msg =
+      `Olá! Acabei de confirmar uma carona pelo CESUCAR.\n\n` +
+      `*Minhas informações:*\n• Nome: ${passengerName}\n• RGM: ${passengerRgm}\n\n` +
+      `*Informações da carona:*\n• Origem: ${origem}\n• Destino: ${destino}\n` +
+      `• Data: ${data}\n• Horário: ${horario}\n\n` +
+      `Gostaria de combinar os detalhes da viagem.`;
+    window.open(`https://wa.me/${number}?text=${encodeURIComponent(msg)}`, "_blank");
+  }
+
+  // ── Notifications ───────────────────────────────────────────────────────────
+
+  async function getNotifications() {
+    if (!isLoggedIn()) return [];
+    try {
+      const result = await apiFetch("/notifications");
+      return Array.isArray(result) ? result : [];
+    } catch { return []; }
+  }
+
+  async function markAllRead() {
+    try {
+      await apiFetch("/notifications/read-all", { method: "PUT" });
+      _setBadgeCount(0);
+    } catch { /* ignore */ }
+  }
+
+  function _setBadgeCount(count) {
     document.querySelectorAll("#notifBadge, .notif-badge").forEach((badge) => {
       badge.textContent = count;
       badge.style.display = count ? "grid" : "none";
     });
   }
 
-  // ------------------------------------------------------------------
-  // Integração com API Flask
-  // ------------------------------------------------------------------
+  async function updateNotifBadge() {
+    if (!isLoggedIn()) return;
+    try {
+      const notifs = await getNotifications();
+      const count = notifs.filter((n) => !n.read_status && !n.read).length;
+      _setBadgeCount(count);
+    } catch { /* ignore */ }
+  }
+
+  // ── Admin API ───────────────────────────────────────────────────────────────
+
+  async function adminGetUser(userId) {
+    try { return await apiFetch(`/admin/users/${userId}`); }
+    catch (err) { return { error: err.error || "Erro ao buscar usuário." }; }
+  }
+
+  async function adminToggleActive(userId, isActive) {
+    try {
+      return await apiFetch(`/admin/users/${userId}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ is_active: isActive }),
+      });
+    } catch (err) { return { error: err.error || "Erro ao alterar status." }; }
+  }
+
+  async function adminGetRecentActivity() {
+    try { return await apiFetch("/admin/recent-activity"); }
+    catch { return { recent_logs: [], recent_users: [] }; }
+  }
+
+  // ── Navigation ──────────────────────────────────────────────────────────────
+
+  function setupNav(activePage) {
+    const user = currentUser();
+    const loggedIn = isLoggedIn();
+    const role = user?.role;
+    const displayName = user ? (user.full_name || user.name || "Usuário").split(" ")[0] : "";
+    const avatarText = user ? (user.avatar || initials(user.full_name || user.name || "")) : "CE";
+
+    const links = [{ href: "index.html", label: "Início", page: "home" }];
+    if (!loggedIn) {
+      links.push({ href: "index.html#como-funciona", label: "Como funciona", page: "how" });
+    } else {
+      links.push({ href: "dashboard.html", label: "Dashboard", page: "dashboard" });
+      if (role === "PASSENGER") {
+        links.push({ href: "procurar-carona.html", label: "Procurar carona", page: "search" });
+        links.push({ href: "dashboard.html", label: "Minhas reservas", page: "reservas" });
+      } else if (role === "DRIVER") {
+        links.push({ href: "oferecer-carona.html", label: "Oferecer carona", page: "offer" });
+        links.push({ href: "oferecer-carona.html#gerenciar", label: "Minhas caronas", page: "myrides" });
+      } else if (role === "ADMIN") {
+        links.push({ href: "procurar-carona.html", label: "Caronas", page: "search" });
+        links.push({ href: "admin.html", label: "Painel admin", page: "admin" });
+      }
+    }
+
+    const navLinksEl = document.getElementById("navLinks");
+    if (navLinksEl) {
+      navLinksEl.innerHTML = links
+        .filter(l => l.page !== "home")
+        .map((l) => `<li><a href="${l.href}"${l.page === activePage ? ' class="active"' : ""}>${l.label}</a></li>`)
+        .join("");
+    }
+
+    const navAuthEl = document.getElementById("navAuthArea");
+    if (navAuthEl) {
+      if (!loggedIn) {
+        navAuthEl.innerHTML = `
+          <a href="login.html" class="btn btn-ghost btn-sm">Entrar</a>
+          <a href="cadastro.html" class="btn btn-primary btn-sm">Cadastrar</a>`;
+      } else {
+        const roleClass = role === "DRIVER" ? "motorista" : role === "ADMIN" ? "admin" : "passageiro";
+        const roleLabel = role === "DRIVER" ? "Motorista" : role === "ADMIN" ? "Admin" : "Passageiro";
+        const fullName  = user?.full_name || user?.name || "Usuário";
+        const navMenuLinks = links
+          .filter(l => l.page !== "home")
+          .map(l => `<a href="${l.href}" class="nav-user-menu-item${l.page === activePage ? " active" : ""}" role="menuitem">${l.label}</a>`)
+          .join("");
+
+        navAuthEl.innerHTML = `
+          <a class="nav-notif-btn" id="notifBtn" href="dashboard.html" aria-label="Notificações">○<span class="notif-badge" id="notifBadge">0</span></a>
+          <div class="nav-user-chip nav-user-dropdown-wrap" id="userChipBtn" tabindex="0" role="button" aria-haspopup="true" aria-expanded="false">
+            <div class="nav-user-avatar">${avatarText}</div>
+            <span>${displayName}</span>
+            <span class="perfil-badge ${roleClass}">${roleLabel}</span>
+            <span class="nav-chip-caret">▾</span>
+            <div class="nav-user-menu" role="menu">
+              <div class="nav-user-menu-info">
+                <strong>${fullName}</strong>
+                <span>RGM ${user?.rgm || ""}</span>
+              </div>
+              <div class="nav-user-menu-divider"></div>
+              ${navMenuLinks}
+              <div class="nav-user-menu-divider"></div>
+              <a href="perfil.html" class="nav-user-menu-item" role="menuitem">👤 Ver perfil</a>
+              <a href="#" class="nav-user-menu-item nav-user-menu-logout" role="menuitem" data-logout>Sair</a>
+            </div>
+          </div>`;
+
+        const chip = navAuthEl.querySelector("#userChipBtn");
+        function toggleDropdown(e) {
+          e.stopPropagation();
+          const open = chip.classList.toggle("open");
+          chip.setAttribute("aria-expanded", open);
+        }
+        chip.addEventListener("click", toggleDropdown);
+        chip.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") toggleDropdown(e); });
+        chip.querySelector("[data-logout]").addEventListener("click", (e) => { e.preventDefault(); logout(); });
+        document.addEventListener("click", () => { chip.classList.remove("open"); chip.setAttribute("aria-expanded", false); }, { capture: true });
+      }
+    }
+
+    const drawer = document.getElementById("mobileDrawer");
+    const hamburger = document.getElementById("hamburger") || document.getElementById("ham");
+
+    if (loggedIn) {
+      document.body.classList.add("user-logged-in");
+      if (drawer) { drawer.innerHTML = ""; drawer.classList.remove("open"); }
+    } else {
+      document.body.classList.remove("user-logged-in");
+      if (hamburger) hamburger.style.display = "";
+      if (drawer) {
+        const drawerLinks = links.map((l) => `<a href="${l.href}">${l.label}</a>`).join("");
+        drawer.innerHTML = drawerLinks + `<div class="drawer-btns">
+          <a href="login.html" class="btn btn-ghost">Entrar</a>
+          <a href="cadastro.html" class="btn btn-primary">Cadastrar</a>
+        </div>`;
+      }
+      setupMobileDrawer();
+    }
+    updateNotifBadge();
+  }
+
+  // ── API utilities ───────────────────────────────────────────────────────────
 
   async function apiStatus() {
     try {
-      const response = await fetch(`${API_URL}/status`);
-      return await response.json();
-    } catch {
-      return null;
-    }
+      const res = await fetch(API_URL.replace("/api", "") + "/status");
+      return await res.json();
+    } catch { return null; }
   }
 
   async function apiCalcularCarona(dados) {
     try {
-      const response = await fetch(`${API_URL}/calcular-carona`, {
+      return await apiFetch("/rides/calculate-cost", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(dados)
+        body: JSON.stringify(dados),
       });
-      return await response.json();
     } catch {
-      // Fallback local se a API não estiver disponível
       if (dados.consumo > 0 && dados.passageiros > 0) {
         const custo = (dados.distancia / dados.consumo) * dados.preco_combustivel;
         return {
           custo_total: Math.round(custo * 100) / 100,
-          valor_por_pessoa: Math.round((custo / dados.passageiros) * 100) / 100
+          valor_por_pessoa: Math.round((custo / dados.passageiros) * 100) / 100,
         };
       }
       return null;
     }
   }
 
-  async function apiPublicarCarona(rideData) {
-    try {
-      const response = await fetch(`${API_URL}/caronas`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(rideData)
-      });
-      return await response.json();
-    } catch {
-      return null;
-    }
-  }
-
-  // ------------------------------------------------------------------
-  // UI — Toast e Modal
-  // ------------------------------------------------------------------
+  // ── Toast ────────────────────────────────────────────────────────────────────
 
   function toast(message, type = "info", duration = 3000) {
     let stack = document.querySelector(".toast-stack");
@@ -446,18 +521,18 @@
       stack.className = "toast-stack";
       document.body.appendChild(stack);
     }
-
     const item = document.createElement("div");
     item.className = "toast " + type;
     item.textContent = message;
     stack.appendChild(item);
-
-    window.setTimeout(() => {
+    setTimeout(() => {
       item.style.opacity = "0";
       item.style.transform = "translateY(8px)";
-      window.setTimeout(() => item.remove(), 180);
+      setTimeout(() => item.remove(), 180);
     }, duration);
   }
+
+  // ── Modal ────────────────────────────────────────────────────────────────────
 
   function modal(options) {
     const config = {
@@ -468,9 +543,8 @@
       cancelLabel: "Cancelar",
       cancel: true,
       onConfirm: null,
-      ...options
+      ...options,
     };
-
     const backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = `
@@ -482,23 +556,19 @@
           ${config.cancel ? `<button class="btn btn-ghost btn-sm" data-modal-cancel>${config.cancelLabel}</button>` : ""}
           <button class="btn btn-primary btn-sm" data-modal-confirm>${config.confirmLabel}</button>
         </div>
-      </div>
-    `;
-
-    function close() {
-      backdrop.remove();
-    }
-
-    backdrop.addEventListener("click", (event) => {
-      if (event.target === backdrop || event.target.closest("[data-modal-cancel]")) close();
-      if (event.target.closest("[data-modal-confirm]")) {
+      </div>`;
+    function close() { backdrop.remove(); }
+    backdrop.addEventListener("click", (e) => {
+      if (e.target === backdrop || e.target.closest("[data-modal-cancel]")) close();
+      if (e.target.closest("[data-modal-confirm]")) {
         close();
         if (typeof config.onConfirm === "function") config.onConfirm();
       }
     });
-
     document.body.appendChild(backdrop);
   }
+
+  // ── Loading state ────────────────────────────────────────────────────────────
 
   function showLoading(button, label = "Carregando...") {
     if (!button) return;
@@ -515,19 +585,17 @@
     if (button.dataset.originalHtml) button.innerHTML = button.dataset.originalHtml;
   }
 
-  // ------------------------------------------------------------------
-  // Tema
-  // ------------------------------------------------------------------
+  // ── Theme ────────────────────────────────────────────────────────────────────
 
   function applyTheme(theme) {
     const next = theme === "dark" ? "dark" : "light";
     document.documentElement.setAttribute("data-theme", next);
-    write("theme", next);
-    document.querySelectorAll(".theme-toggle, #themeBtn").forEach((control) => {
-      control.textContent = next === "dark" ? "☾" : "☀";
-      control.setAttribute("role", "button");
-      control.setAttribute("aria-label", next === "dark" ? "Usar tema claro" : "Usar tema escuro");
-      control.tabIndex = 0;
+    localStorage.setItem(THEME_KEY, next);
+    document.querySelectorAll(".theme-toggle, #themeBtn").forEach((ctrl) => {
+      ctrl.textContent = next === "dark" ? "☾" : "☀";
+      ctrl.setAttribute("role", "button");
+      ctrl.setAttribute("aria-label", next === "dark" ? "Usar tema claro" : "Usar tema escuro");
+      ctrl.tabIndex = 0;
     });
     return next;
   }
@@ -538,112 +606,110 @@
   }
 
   function setupThemeControls() {
-    applyTheme(read("theme", document.documentElement.getAttribute("data-theme") || "light"));
-    document.querySelectorAll(".theme-toggle, #themeBtn").forEach((control) => {
-      control.addEventListener("click", toggleTheme);
-      control.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          toggleTheme();
-        }
+    const saved = localStorage.getItem(THEME_KEY) ||
+      document.documentElement.getAttribute("data-theme") || "light";
+    applyTheme(saved);
+    document.querySelectorAll(".theme-toggle, #themeBtn").forEach((ctrl) => {
+      ctrl.addEventListener("click", toggleTheme);
+      ctrl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleTheme(); }
       });
     });
   }
 
-  // ------------------------------------------------------------------
-  // Mobile drawer
-  // ------------------------------------------------------------------
+  // ── Mobile drawer ────────────────────────────────────────────────────────────
 
   function setupMobileDrawer() {
     const button = document.getElementById("hamburger") || document.getElementById("ham");
     const drawer = document.getElementById("mobileDrawer") || document.getElementById("drawer");
     if (!button || !drawer) return;
-
-    button.addEventListener("click", (event) => {
-      event.stopPropagation();
+    if (button.dataset.drawerSetup) return;
+    button.dataset.drawerSetup = "1";
+    button.addEventListener("click", (e) => {
+      e.stopPropagation();
       drawer.classList.toggle("open");
     });
-
-    drawer.querySelectorAll("a").forEach((link) => {
-      link.addEventListener("click", () => drawer.classList.remove("open"));
-    });
-
-    document.addEventListener("click", (event) => {
-      if (!event.target.closest("#hamburger, #ham") && !event.target.closest("#mobileDrawer, #drawer")) {
+    drawer.querySelectorAll("a").forEach((link) =>
+      link.addEventListener("click", () => drawer.classList.remove("open"))
+    );
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest("#hamburger,#ham") && !e.target.closest("#mobileDrawer,#drawer"))
         drawer.classList.remove("open");
-      }
     });
   }
 
-  // ------------------------------------------------------------------
-  // UI do usuário na navbar
-  // ------------------------------------------------------------------
+  // ── User UI ───────────────────────────────────────────────────────────────────
 
   function setupUserUI() {
     const user = currentUser();
-    document.querySelectorAll("[data-user-name]").forEach((el) => {
-      el.textContent = user ? user.name.split(" ")[0] : "Visitante";
-    });
+    const displayName = user ? (user.full_name || user.name || "Usuário").split(" ")[0] : "Visitante";
+    document.querySelectorAll("[data-user-name]").forEach((el) => { el.textContent = displayName; });
     document.querySelectorAll("[data-user-avatar]").forEach((el) => {
-      el.textContent = user ? user.avatar || initials(user.name) : "CE";
+      el.textContent = user ? user.avatar || initials(user.full_name || user.name || "") : "CE";
     });
-    document.querySelectorAll("[data-logout]").forEach((el) => el.addEventListener("click", logout));
-
-    // Exibir badge de perfil na navbar se disponível
+    document.querySelectorAll("[data-logout]").forEach((el) =>
+      el.addEventListener("click", logout)
+    );
     document.querySelectorAll("[data-user-perfil]").forEach((el) => {
-      if (user?.perfil) {
-        el.textContent = user.perfil === "motorista" ? "Motorista" : "Passageiro";
-        el.className = `perfil-badge ${user.perfil}`;
+      const perfil = user?.perfil || user?.role;
+      if (perfil) {
+        const p = String(perfil).toLowerCase();
+        const isDriver = p === "motorista" || p === "driver";
+        el.textContent = isDriver ? "Motorista" : "Passageiro";
+        el.className = `perfil-badge ${isDriver ? "motorista" : "passageiro"}`;
       }
     });
-
     updateNotifBadge();
   }
 
-  // ------------------------------------------------------------------
-  // Reveal animation
-  // ------------------------------------------------------------------
+  // ── Reveal animation ─────────────────────────────────────────────────────────
 
   function setupReveal() {
     const nodes = document.querySelectorAll(".reveal");
     if (!nodes.length) return;
     if (!("IntersectionObserver" in window)) {
-      nodes.forEach((node) => node.classList.add("visible"));
+      nodes.forEach((n) => n.classList.add("visible"));
       return;
     }
-
     const observer = new IntersectionObserver(
       (entries) => {
-        entries.forEach((entry, index) => {
+        entries.forEach((entry, i) => {
           if (!entry.isIntersecting) return;
-          window.setTimeout(() => entry.target.classList.add("visible"), index * 45);
+          setTimeout(() => entry.target.classList.add("visible"), i * 45);
           observer.unobserve(entry.target);
         });
       },
       { threshold: 0.08 }
     );
-
-    nodes.forEach((node) => observer.observe(node));
+    nodes.forEach((n) => observer.observe(n));
   }
 
-  // ------------------------------------------------------------------
-  // Init
-  // ------------------------------------------------------------------
+  // ── Init ─────────────────────────────────────────────────────────────────────
 
   function init() {
-    seed();
+    // Apply immediately so CSS hides the drawer before any paint
+    if (isLoggedIn()) {
+      document.body.classList.add("user-logged-in");
+      const drawer = document.getElementById("mobileDrawer") || document.getElementById("drawer");
+      if (drawer) { drawer.innerHTML = ""; drawer.classList.remove("open"); }
+    }
     setupThemeControls();
-    setupMobileDrawer();
+    if (!isLoggedIn()) setupMobileDrawer();
     setupUserUI();
     setupReveal();
   }
 
+  // ── Public API ────────────────────────────────────────────────────────────────
+
   window.CESUCAR = {
-    _get: read,
-    _set: write,
     API_URL,
     today,
     tomorrow,
+    CIDADES_BAIRROS,
+    // Helpers
+    getNeighborhoods,
+    populateNeighborhoodSelect,
+    // Auth
     currentUser,
     isLoggedIn,
     requireAuth,
@@ -651,18 +717,33 @@
     login,
     register,
     logout,
+    getUserPerfil,
+    // Rides
     getRides,
     addRide,
+    getMyRides,
     getReservations,
+    getMyRequests,
     reserveRide,
     cancelReservation,
+    // WhatsApp
+    openWhatsApp,
+    // Notifications
     getNotifications,
     markAllRead,
     updateNotifBadge,
-    getUserPerfil,
+    // Admin
+    adminGetUser,
+    adminToggleActive,
+    adminGetRecentActivity,
+    updateMe,
+    // Nav
+    setupNav,
+    // API utils
+    apiFetch,
     apiStatus,
     apiCalcularCarona,
-    apiPublicarCarona,
+    // UI helpers
     toast,
     modal,
     showLoading,
@@ -670,7 +751,7 @@
     toggleTheme,
     applyTheme,
     initials,
-    init
+    init,
   };
 
   if (document.readyState === "loading") {

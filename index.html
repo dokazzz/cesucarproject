@@ -15,32 +15,15 @@
       <img src="logo.png" alt="CESUCAR" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
       <span class="navbar-logo-fallback">CESUCAR</span>
     </a>
-
-    <ul class="navbar-links">
-      <li><a href="index.html" class="active">Início</a></li>
-      <li><a href="procurar-carona.html">Procurar</a></li>
-      <li><a href="dashboard.html">Dashboard</a></li>
-      <li><a href="#como-funciona">Como funciona</a></li>
-    </ul>
-
+    <ul class="navbar-links" id="navLinks"></ul>
     <div class="navbar-right">
       <div class="theme-toggle"></div>
-      <a href="login.html" class="btn btn-ghost">Entrar</a>
-      <a href="cadastro.html" class="btn btn-primary">Cadastrar</a>
+      <div id="navAuthArea"></div>
       <button class="hamburger" id="hamburger" aria-label="Abrir menu"><span></span><span></span><span></span></button>
     </div>
   </nav>
 
-  <div class="mobile-drawer" id="mobileDrawer">
-    <a href="index.html">Início</a>
-    <a href="procurar-carona.html">Procurar carona</a>
-    <a href="dashboard.html">Dashboard</a>
-    <a href="#como-funciona">Como funciona</a>
-    <div class="drawer-btns">
-      <a href="login.html" class="btn btn-ghost">Entrar</a>
-      <a href="cadastro.html" class="btn btn-primary">Cadastrar</a>
-    </div>
-  </div>
+  <div class="mobile-drawer" id="mobileDrawer"></div>
 
   <main>
     <section class="home-hero">
@@ -82,53 +65,45 @@
         </div>
       </div>
 
-      <aside class="hero-panel reveal" aria-label="Resumo de caronas">
+      <aside class="hero-panel reveal" aria-label="Sobre a plataforma">
         <div class="hero-panel-head">
           <div>
-            <div class="hero-panel-title">Rota em destaque</div>
-            <div class="hero-panel-route">Cachoeirinha → CESUCA</div>
+            <div class="hero-panel-title">Rota universitária</div>
+            <div class="hero-panel-route">Sua cidade → CESUCA</div>
           </div>
-          <strong>R$10</strong>
         </div>
 
         <div class="hero-map">
           <div class="route-line">
             <span class="route-dot fill"></span>
-            <strong>Cachoeirinha</strong>
-            <span>07:20</span>
+            <strong>Sua cidade</strong>
+            <span>Partida</span>
           </div>
           <div class="route-line">
             <span class="route-dot"></span>
             <strong>CESUCA</strong>
-            <span>08:05</span>
+            <span>Chegada</span>
           </div>
         </div>
 
         <div class="hero-panel-cards">
-          <div class="mini-card"><strong>3</strong><span>vagas abertas</span></div>
-          <div class="mini-card"><strong>4.9</strong><span>avaliação média</span></div>
-          <div class="mini-card"><strong>18</strong><span>viagens no mês</span></div>
+          <div class="mini-card"><strong id="statUsers">—</strong><span>estudantes</span></div>
+          <div class="mini-card"><strong id="statRides">—</strong><span>caronas ativas</span></div>
+          <div class="mini-card"><strong>100%</strong><span>real</span></div>
         </div>
       </aside>
     </section>
 
-    <section class="stats-band reveal" aria-label="Números da plataforma">
+    <section class="stats-band reveal" aria-label="Dados da plataforma">
       <div class="stat-item">
-        <div class="stat-n" data-target="1240">0+</div>
+        <div class="stat-n" id="counterUsers">—</div>
         <div class="stat-l">estudantes cadastrados</div>
       </div>
       <div class="stat-item">
-        <div class="stat-n" data-target="3870">0+</div>
-        <div class="stat-l">caronas realizadas</div>
+        <div class="stat-n" id="counterRides">—</div>
+        <div class="stat-l">caronas disponíveis</div>
       </div>
-      <div class="stat-item">
-        <div class="stat-n">98%</div>
-        <div class="stat-l">satisfação dos usuários</div>
-      </div>
-      <div class="stat-item">
-        <div class="stat-n">4.9</div>
-        <div class="stat-l">avaliação média</div>
-      </div>
+
     </section>
 
     <section class="section reveal">
@@ -137,13 +112,13 @@
         <a href="procurar-carona.html" class="explore-card">
           <span class="ec-icon">⌕</span>
           <strong class="ec-title">Procurar carona</strong>
-          <p class="ec-desc">Filtre por cidade, data, horário e preço para encontrar a melhor opção.</p>
+          <p class="ec-desc">Filtre por cidade, data, horário e tipo de viagem para chegar ao CESUCA.</p>
           <span class="ec-link">Buscar agora</span>
         </a>
         <a href="cadastro.html" class="explore-card">
           <span class="ec-icon">+</span>
-          <strong class="ec-title">Entrar na comunidade</strong>
-          <p class="ec-desc">Crie sua conta e mantenha suas reservas organizadas no dashboard.</p>
+          <strong class="ec-title">Criar conta</strong>
+          <p class="ec-desc">Cadastre-se com seu RGM e mantenha suas reservas organizadas no dashboard.</p>
           <span class="ec-link">Criar conta</span>
         </a>
         <a href="dashboard.html" class="explore-card">
@@ -152,33 +127,29 @@
           <p class="ec-desc">Veja caronas confirmadas, notificações e atividades recentes.</p>
           <span class="ec-link">Abrir dashboard</span>
         </a>
-        <a href="login.html" class="explore-card">
+        <a href="oferecer-carona.html" class="explore-card">
           <span class="ec-icon">↳</span>
-          <strong class="ec-title">Acesso rápido</strong>
-          <p class="ec-desc">Use a conta demo para testar a experiência completa da plataforma.</p>
-          <span class="ec-link">Fazer login</span>
+          <strong class="ec-title">Oferecer carona</strong>
+          <p class="ec-desc">Publique sua rota para estudantes que fazem o mesmo trajeto.</p>
+          <span class="ec-link">Publicar rota</span>
         </a>
       </div>
     </section>
 
     <section class="section compact reveal">
-      <h2 class="sec-title">Rotas mais buscadas</h2>
-      <div class="routes-grid">
-        <a href="procurar-carona.html?cidade=Cachoeirinha&tipo=ida" class="route-chip">
+      <h2 class="sec-title">Rotas disponíveis</h2>
+      <div class="routes-grid" id="routesGrid">
+        <a href="procurar-carona.html?departure_city=Cachoeirinha" class="route-chip">
           <span>Cachoeirinha <span class="rc-arrow">→</span> CESUCA</span>
-          <span class="rc-price">R$10</span>
         </a>
-        <a href="procurar-carona.html?cidade=Gravataí&tipo=ida" class="route-chip">
+        <a href="procurar-carona.html?departure_city=Gravataí" class="route-chip">
           <span>Gravataí <span class="rc-arrow">→</span> CESUCA</span>
-          <span class="rc-price">R$12</span>
         </a>
-        <a href="procurar-carona.html?cidade=Canoas&tipo=ida" class="route-chip">
+        <a href="procurar-carona.html?departure_city=Canoas" class="route-chip">
           <span>Canoas <span class="rc-arrow">→</span> CESUCA</span>
-          <span class="rc-price">R$8</span>
         </a>
-        <a href="procurar-carona.html?cidade=Alvorada&tipo=ida" class="route-chip">
+        <a href="procurar-carona.html?departure_city=Alvorada" class="route-chip">
           <span>Alvorada <span class="rc-arrow">→</span> CESUCA</span>
-          <span class="rc-price">R$15</span>
         </a>
       </div>
     </section>
@@ -189,12 +160,12 @@
         <div class="how-card">
           <span class="how-icon">1</span>
           <strong class="how-title">Crie sua conta</strong>
-          <p class="how-text">Cadastre-se com seus dados básicos e entre na comunidade de estudantes.</p>
+          <p class="how-text">Cadastre-se com seu RGM e dados básicos para entrar na comunidade.</p>
         </div>
         <div class="how-card">
           <span class="how-icon">2</span>
           <strong class="how-title">Encontre uma rota</strong>
-          <p class="how-text">Use filtros simples para comparar horários, motoristas, vagas e valores.</p>
+          <p class="how-text">Use filtros para comparar horários, motoristas, vagas e valores.</p>
         </div>
         <div class="how-card">
           <span class="how-icon">3</span>
@@ -206,8 +177,8 @@
 
     <section class="login-cta reveal">
       <div class="lc-left">
-        <h2 class="lc-title">Teste a plataforma com a conta demo</h2>
-        <p class="lc-desc">Acesse o dashboard, reserve caronas e veja como a experiência fica depois do login.</p>
+        <h2 class="lc-title">Faça parte da comunidade CESUCA</h2>
+        <p class="lc-desc">Crie sua conta, reserve caronas e viaje com quem já faz parte da sua rotina.</p>
         <div class="lc-btns">
           <a href="login.html" class="btn btn-primary btn-lg">Entrar agora</a>
           <a href="cadastro.html" class="btn btn-ghost btn-lg">Criar conta</a>
@@ -215,10 +186,10 @@
       </div>
       <div class="lc-right">
         <div class="lc-avatars">
-          <div class="lc-av">DM</div>
-          <div class="lc-av orange">JS</div>
-          <div class="lc-av mid">PM</div>
-          <div class="lc-av">MS</div>
+          <div class="lc-av">CE</div>
+          <div class="lc-av orange">SU</div>
+          <div class="lc-av mid">CA</div>
+          <div class="lc-av">R</div>
         </div>
       </div>
     </section>
@@ -251,9 +222,9 @@
       <div class="f-col">
         <strong class="f-col-title">Rotas</strong>
         <ul>
-          <li><a href="procurar-carona.html?cidade=Cachoeirinha">Cachoeirinha → CESUCA</a></li>
-          <li><a href="procurar-carona.html?cidade=Gravataí">Gravataí → CESUCA</a></li>
-          <li><a href="procurar-carona.html?cidade=Canoas">Canoas → CESUCA</a></li>
+          <li><a href="procurar-carona.html?departure_city=Cachoeirinha">Cachoeirinha → CESUCA</a></li>
+          <li><a href="procurar-carona.html?departure_city=Gravataí">Gravataí → CESUCA</a></li>
+          <li><a href="procurar-carona.html?departure_city=Canoas">Canoas → CESUCA</a></li>
         </ul>
       </div>
     </div>
@@ -265,24 +236,29 @@
 
   <script src="js/app.js"></script>
   <script>
+    CESUCAR.setupNav("home");
+
     function doSearch() {
       const cidade = document.getElementById("homeCidade").value.trim();
       const params = new URLSearchParams();
-      if (cidade) params.set("cidade", cidade);
+      if (cidade) params.set("departure_city", cidade);
       window.location.href = "procurar-carona.html" + (params.toString() ? "?" + params : "");
     }
 
-    document.querySelectorAll("[data-target]").forEach((counter) => {
-      const target = Number(counter.dataset.target);
-      let frame = 0;
-      const tick = () => {
-        frame += 1;
-        const progress = Math.min(frame / 45, 1);
-        counter.textContent = Math.floor(target * progress).toLocaleString("pt-BR") + "+";
-        if (progress < 1) requestAnimationFrame(tick);
-      };
-      tick();
-    });
+    // Load real stats from the public stats endpoint (no auth required)
+    (async function loadStats() {
+      try {
+        const res = await fetch(CESUCAR.API_URL + "/stats");
+        if (!res.ok) return;
+        const stats = await res.json();
+        const u = stats.total_users ?? "—";
+        const r = stats.active_rides ?? "—";
+        document.getElementById("counterUsers").textContent = u;
+        document.getElementById("counterRides").textContent = r;
+        document.getElementById("statUsers").textContent = u;
+        document.getElementById("statRides").textContent = r;
+      } catch { /* backend unavailable — leave dashes */ }
+    })();
   </script>
 </body>
 </html>

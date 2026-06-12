@@ -25,7 +25,7 @@
   --radius: 8px;
   --shadow: 0 14px 40px rgba(23, 32, 51, 0.09);
   --shadow-lg: 0 24px 70px rgba(23, 32, 51, 0.16);
-  --nav-h: 180px;
+  --nav-h: 80px;
   --t: 180ms ease;
 }
 
@@ -170,14 +170,16 @@ body > nav:not(.navbar) {
 .navbar-logo img,
 .nav-logo img {
   width: auto;
-  height: 200px;
+  height: 110px;
+  max-width: 360px;
   object-fit: contain;
 }
 
 /* Footer */
 .f-logo img {
   width: auto;
-  height: 180px;
+  height: 100px;
+  max-width: 320px;
   object-fit: contain;
 }
 
@@ -351,19 +353,17 @@ body > nav:not(.navbar) {
   right: 0;
   left: 0;
   z-index: 990;
-  display: grid;
+  display: none;
   gap: 4px;
   padding: 14px clamp(16px, 4vw, 56px) 18px;
   background: color-mix(in srgb, var(--surface) 96%, transparent);
   border-bottom: 1px solid var(--glass-border);
   box-shadow: var(--shadow);
-  transform: translateY(-120%);
-  transition: transform var(--t);
 }
 
 .mobile-drawer.open,
 .drawer.open {
-  transform: translateY(0);
+  display: grid;
 }
 
 .mobile-drawer a,
@@ -865,8 +865,8 @@ textarea.form-input {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  width: min(100% - 32px, 1180px);
+  grid-template-columns: repeat(2, 1fr);
+  width: min(100% - 32px, 600px);
   margin: 0 auto;
   overflow: hidden;
   border: 1px solid var(--glass-border);
@@ -1148,6 +1148,28 @@ footer {
 .footer-bot a {
   color: var(--orange);
   text-decoration: none;
+}
+
+/* Anchor offset — compensates for fixed navbar on hash links */
+section[id], div[id].section {
+  scroll-margin-top: var(--nav-h);
+}
+
+.footer-nav {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.footer-nav a {
+  color: var(--text-muted);
+  font-size: 0.83rem;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.footer-nav a:hover {
+  color: var(--orange);
 }
 
 .dash-greeting,
@@ -2080,7 +2102,7 @@ footer {
 
 @media (max-width: 680px) {
   :root {
-    --nav-h: 130px;
+    --nav-h: 70px;
   }
 
   .navbar,
@@ -2094,7 +2116,7 @@ footer {
 
   .navbar-logo img,
   .nav-logo img {
-    height: 140px;
+    height: 90px;
   }
 
   .navbar-right > .btn-primary {
@@ -2339,6 +2361,155 @@ footer {
 
 .user-menu-perfil {
   margin-top: 6px;
+}
+
+/* ── Nav user dropdown ──────────────────────────────────────── */
+.nav-user-dropdown-wrap {
+  position: relative;
+  user-select: none;
+}
+
+.nav-chip-caret {
+  font-size: 0.65rem;
+  opacity: 0.55;
+  transition: transform 0.18s;
+  margin-left: -4px;
+}
+
+.nav-user-dropdown-wrap.open .nav-chip-caret {
+  transform: rotate(180deg);
+}
+
+.nav-user-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 170px;
+  background: var(--surface-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 999;
+  overflow: hidden;
+  animation: dropIn 0.15s ease;
+}
+
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.nav-user-dropdown-wrap.open .nav-user-menu {
+  display: block;
+}
+
+.nav-user-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  color: var(--text);
+  text-decoration: none;
+  transition: background 0.12s;
+  white-space: nowrap;
+}
+
+.nav-user-menu-item:hover {
+  background: var(--hover-bg);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.nav-user-menu-divider {
+  height: 1px;
+  background: var(--glass-border);
+  margin: 2px 0;
+}
+
+.nav-user-menu-logout {
+  color: #dc4c4c;
+}
+
+/* Hide hamburger and mobile drawer for logged-in users — dropdown handles all nav */
+body.user-logged-in #hamburger,
+body.user-logged-in #ham,
+body.user-logged-in #mobileDrawer,
+body.user-logged-in #drawer {
+  display: none !important;
+}
+
+.role-switch-box {
+  background: var(--hover-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 18px 20px;
+}
+
+.btn-danger {
+  color: #dc4c4c !important;
+  border-color: rgba(220,76,76,.3) !important;
+}
+.btn-danger:hover {
+  background: rgba(220,76,76,.08) !important;
+}
+
+.nav-user-menu-logout:hover {
+  background: rgba(220, 76, 76, 0.08);
+  color: #dc4c4c;
+}
+
+.nav-user-menu-info {
+  padding: 12px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.nav-user-menu-info strong {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.nav-user-menu-info span {
+  font-size: 0.75rem;
+  color: var(--text-2);
+}
+
+.nav-user-menu-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px 12px;
+}
+
+.nav-user-menu-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+  font-weight: 800;
+  flex: 0 0 auto;
+}
+
+.nav-user-menu-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.nav-user-menu-sub {
+  font-size: 0.75rem;
+  color: var(--text-2);
+  margin-top: 1px;
+}
+
+.nav-user-menu-item.active {
+  color: var(--orange);
+  font-weight: 700;
 }
 
 /* ------------------------------------------------------------------
@@ -2586,7 +2757,8 @@ footer {
 }
 
 .hero-brand-logo img {
-  height: 200px;
+  height: 110px;
+  max-width: 360px;
   width: auto;
   object-fit: contain;
   animation: logoGlow 4s ease-in-out 1s infinite;
@@ -2675,14 +2847,14 @@ footer {
 
 @media (max-width: 980px) {
   .hero-brand-logo img {
-    height: 160px;
+    height: 90px;
   }
 }
 
 @media (max-width: 680px) {
   .navbar-logo img,
   .nav-logo img {
-    height: 140px;
+    height: 90px;
   }
 
   .auth-logo img,
@@ -2692,10 +2864,40 @@ footer {
   }
 
   .hero-brand-logo img {
-    height: 140px;
+    height: 80px;
   }
 
   .f-logo img {
-    height: 140px;
+    height: 85px;
+  }
+}
+
+/* ── Dark mode logo swap — mesmos tamanhos do modo claro ─────── */
+[data-theme="dark"] .navbar-logo img,
+[data-theme="dark"] .nav-logo img {
+  content: url("../logo-alternativa.png");
+  height: 56px;
+  max-width: 200px;
+}
+
+[data-theme="dark"] .hero-brand-logo img {
+  content: url("../logo-alternativa.png");
+  height: 110px;
+  max-width: 360px;
+}
+
+[data-theme="dark"] .f-logo img {
+  content: url("../logo-alternativa.png");
+  height: 52px;
+  max-width: 180px;
+}
+
+@media (max-width: 680px) {
+  [data-theme="dark"] .navbar-logo img,
+  [data-theme="dark"] .nav-logo img {
+    height: 52px;
+  }
+  [data-theme="dark"] .hero-brand-logo img {
+    height: 80px;
   }
 }

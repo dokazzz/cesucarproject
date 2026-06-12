@@ -20,17 +20,21 @@
       <h1 class="login-title">Bem-vindo de volta</h1>
       <p class="login-sub">Entre com sua conta para acessar reservas, rotas e notificações.</p>
 
-      <div class="demo-hint">
-        <strong>Conta demo</strong>
-        Nome: <b>Demo</b> · RGM: <b>12345678</b> · Senha: <b>123456</b>
-      </div>
-
-      <form class="login-form" id="loginForm" onsubmit="handleLogin(event)">
+      <form class="login-form" id="loginForm" onsubmit="handleLogin(event)" novalidate>
         <div class="divider-row"><span>credenciais</span></div>
 
         <div class="form-group">
           <label class="form-label" for="rgm">RGM <span class="req">*</span></label>
-          <input class="form-input" type="text" id="rgm" placeholder="00000000" value="12345678" inputmode="numeric" maxlength="8" autocomplete="username" required />
+          <input
+            class="form-input"
+            type="text"
+            id="rgm"
+            placeholder="00000000"
+            inputmode="numeric"
+            maxlength="8"
+            autocomplete="username"
+            required
+          />
           <span class="form-hint">8 dígitos numéricos — sem letras ou espaços.</span>
           <span class="form-error" id="err-rgm"></span>
         </div>
@@ -38,29 +42,17 @@
         <div class="form-group">
           <label class="form-label" for="password">Senha <span class="req">*</span></label>
           <div class="input-eye">
-            <input class="form-input" type="password" id="password" placeholder="Sua senha" value="123456" autocomplete="current-password" required />
+            <input
+              class="form-input"
+              type="password"
+              id="password"
+              placeholder="Sua senha"
+              autocomplete="current-password"
+              required
+            />
             <button type="button" class="eye-btn" id="eyeBtn" onclick="togglePwd()" aria-label="Mostrar senha">◐</button>
           </div>
           <span class="form-error" id="err-pw"></span>
-        </div>
-
-        <a href="#" class="forgot-link" onclick="forgotPwd(event)">Esqueci minha senha</a>
-
-        <!-- Seletor de perfil para a sessão -->
-        <div class="form-group">
-          <label class="form-label">Entrar como</label>
-          <div class="role-selector role-selector-sm">
-            <label class="role-option" id="role-passageiro">
-              <input type="radio" name="perfil" value="passageiro" checked />
-              <span class="role-icon">🎓</span>
-              <span class="role-label">Passageiro</span>
-            </label>
-            <label class="role-option" id="role-motorista">
-              <input type="radio" name="perfil" value="motorista" />
-              <span class="role-icon">🚗</span>
-              <span class="role-label">Motorista</span>
-            </label>
-          </div>
         </div>
 
         <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginBtn">Entrar</button>
@@ -78,44 +70,18 @@
   <script>
     if (CESUCAR.isLoggedIn()) window.location.href = "dashboard.html";
 
-    // Destaque visual do perfil selecionado
-    document.querySelectorAll('input[name="perfil"]').forEach((radio) => {
-      radio.addEventListener("change", () => {
-        document.querySelectorAll(".role-option").forEach((el) => el.classList.remove("selected"));
-        radio.closest(".role-option").classList.add("selected");
-      });
+    document.getElementById("rgm").addEventListener("input", function () {
+      this.value = this.value.replace(/\D/g, "").slice(0, 8);
+      document.getElementById("err-rgm").textContent = "";
     });
-    document.querySelector('input[name="perfil"]:checked')
-      ?.closest(".role-option")
-      ?.classList.add("selected");
 
     function togglePwd() {
       const input = document.getElementById("password");
-      const button = document.getElementById("eyeBtn");
+      const btn = document.getElementById("eyeBtn");
       const visible = input.type === "text";
       input.type = visible ? "password" : "text";
-      button.textContent = visible ? "◐" : "●";
-      button.setAttribute("aria-label", visible ? "Mostrar senha" : "Ocultar senha");
-    }
-
-    // Filtro: apenas dígitos no campo RGM
-    document.getElementById("rgm").addEventListener("input", function () {
-      this.value = this.value.replace(/\D/g, "").slice(0, 8);
-    });
-
-    function forgotPwd(event) {
-      event.preventDefault();
-      const rgm = document.getElementById("rgm").value.trim();
-      const rgmValido = /^\d{8}$/.test(rgm);
-      CESUCAR.modal({
-        icon: "↳",
-        title: "Recuperar senha",
-        body: rgmValido
-          ? `Entre em contato com a administração informando seu RGM <strong>${rgm}</strong>.`
-          : "Informe seu RGM de 8 dígitos antes de solicitar recuperação.",
-        confirmLabel: "Ok",
-        cancel: false
-      });
+      btn.textContent = visible ? "◐" : "●";
+      btn.setAttribute("aria-label", visible ? "Mostrar senha" : "Ocultar senha");
     }
 
     async function handleLogin(event) {
@@ -123,10 +89,9 @@
       document.getElementById("err-rgm").textContent = "";
       document.getElementById("err-pw").textContent = "";
 
-      const button = document.getElementById("loginBtn");
+      const btn = document.getElementById("loginBtn");
       const rgm = document.getElementById("rgm").value.trim();
       const password = document.getElementById("password").value;
-      const perfil = document.querySelector('input[name="perfil"]:checked')?.value || "passageiro";
 
       if (!rgm) {
         document.getElementById("err-rgm").textContent = "Informe seu RGM.";
@@ -144,10 +109,9 @@
         return;
       }
 
-      CESUCAR.showLoading(button, "Verificando...");
-      await new Promise((resolve) => setTimeout(resolve, 650));
-      const result = CESUCAR.login(rgm, password);
-      CESUCAR.hideLoading(button);
+      CESUCAR.showLoading(btn, "Verificando...");
+      const result = await CESUCAR.login(rgm, password);
+      CESUCAR.hideLoading(btn);
 
       if (!result.ok) {
         document.getElementById("err-pw").textContent = result.error;
@@ -155,15 +119,8 @@
         return;
       }
 
-      // Atualizar perfil do usuário conforme seleção
-      const user = CESUCAR._get("currentUser", null);
-      if (user) {
-        user.perfil = perfil;
-        CESUCAR._set("currentUser", user);
-      }
-
-      button.textContent = "Entrada confirmada";
-      CESUCAR.toast(`Login realizado como ${perfil}. Redirecionando...`, "success", 1500);
+      btn.textContent = "Entrada confirmada";
+      CESUCAR.toast("Login realizado. Redirecionando...", "success", 1500);
       setTimeout(() => window.location.href = "dashboard.html", 900);
     }
   </script>

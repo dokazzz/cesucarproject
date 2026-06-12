@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meu perfil — CESUCAR</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .profile-card {
+      max-width: 660px;
+      margin: 0 auto;
+      background: var(--surface-2);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .profile-header {
+      padding: 32px 32px 22px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      border-bottom: 1px solid var(--glass-border);
+    }
+    .profile-avatar-lg {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      background: var(--orange);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-size: 1.5rem;
+      font-weight: 800;
+      flex: 0 0 auto;
+    }
+    .profile-header-info { flex: 1; min-width: 0; }
+    .profile-name { font-size: 1.2rem; font-weight: 800; color: var(--text); margin: 0 0 4px; }
+    .profile-meta { font-size: 0.83rem; color: var(--text-2); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .profile-body { padding: 24px 32px; display: grid; gap: 22px; }
+    .profile-section-title {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--orange); margin-bottom: 12px;
+    }
+    .profile-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 520px) { .profile-fields { grid-template-columns: 1fr; } }
+    .profile-field label {
+      display: block; font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .04em; color: var(--text-2); margin-bottom: 4px;
+    }
+    .pf-value { font-size: 0.93rem; color: var(--text); font-weight: 500; }
+    .pf-empty { font-size: 0.88rem; color: var(--text-2); font-style: italic; }
+    .profile-actions {
+      padding: 18px 32px 26px;
+      border-top: 1px solid var(--glass-border);
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .vehicle-section {
+      background: var(--hover-bg);
+      border-radius: var(--radius-sm);
+      padding: 18px 20px;
+      border: 1px solid var(--glass-border);
+    }
+    .role-switch-box {
+      background: var(--hover-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      padding: 18px 20px;
+    }
+    /* Edit mode */
+    .edit-section {
+      background: var(--hover-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+    }
+    .edit-actions { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+    .btn-danger { color: #dc4c4c !important; border-color: rgba(220,76,76,.3) !important; }
+    .btn-danger:hover { background: rgba(220,76,76,.08) !important; }
+  </style>
+</head>
+<body class="app-page">
+  <div class="bg-mesh"></div>
+  <div class="bg-grid"></div>
+
+  <nav class="navbar">
+    <a href="index.html" class="navbar-logo">
+      <img src="logo.png" alt="CESUCAR" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+      <span class="navbar-logo-fallback">CESUCAR</span>
+    </a>
+    <ul class="navbar-links" id="navLinks"></ul>
+    <div class="navbar-right">
+      <div class="theme-toggle"></div>
+      <div id="navAuthArea"></div>
+      <button class="hamburger" id="hamburger" aria-label="Abrir menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="mobile-drawer" id="mobileDrawer"></div>
+
+  <main class="page-body">
+    <header class="page-head reveal">
+      <div class="section-tag">Conta</div>
+      <h1 class="page-title">Meu <span class="accent">perfil</span></h1>
+    </header>
+    <div id="profileRoot"></div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-bottom">
+      <span>© 2026 CESUCAR — Centro Universitário CESUCA</span>
+      <nav class="footer-nav">
+        <a href="index.html">Início</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="procurar-carona.html">Caronas</a>
+        <a href="oferecer-carona.html">Oferecer carona</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script>
+    CESUCAR.requireAuth();
+    CESUCAR.setupNav();
+
+    const CURSOS = [
+      "Administração","Análise e Desenvolvimento de Sistemas","Arquitetura e Urbanismo",
+      "Biomedicina","Ciência da Computação","Ciências Contábeis","Design de Interiores",
+      "Direito","Educação Física","Enfermagem","Engenharia Civil","Engenharia de Produção",
+      "Engenharia Mecânica","Estética e Cosmética","Farmácia","Fisioterapia","Fonoaudiologia",
+      "Gestão Comercial","Gestão da Produção Industrial","Gestão da Qualidade",
+      "Gestão da Tecnologia da Informação","Gestão Financeira","Logística","Marketing",
+      "Matemática","Medicina","Medicina Veterinária","Nutrição","Odontologia","Pedagogia",
+      "Processos Gerenciais","Psicologia","Publicidade e Propaganda","Outro"
+    ];
+
+    const CIDADES = [
+      "Cachoeirinha","Gravataí","Canoas","Alvorada","Porto Alegre",
+      "Viamão","Sapucaia do Sul","São Leopoldo","Outra"
+    ];
+
+    // ── View mode ────────────────────────────────────────────────
+    function renderProfile() {
+      const user = CESUCAR.currentUser();
+      if (!user) return;
+
+      const role     = user.role || "";
+      const isDriver = role === "DRIVER";
+      const isAdmin  = role === "ADMIN";
+      const roleClass = isDriver ? "motorista" : isAdmin ? "admin" : "passageiro";
+      const roleLabel = isDriver ? "Motorista" : isAdmin ? "Administrador" : "Passageiro";
+      const avatarText = (user.full_name || user.name || "?")
+        .split(" ").filter(Boolean).map(p => p[0]).join("").toUpperCase().slice(0, 2);
+
+      const val = v => v
+        ? `<span class="pf-value">${v}</span>`
+        : `<span class="pf-empty">Não informado</span>`;
+
+      const vehicleHtml = isDriver ? `
+        <div class="vehicle-section">
+          <div class="profile-section-title">🚗 Veículo</div>
+          <div class="profile-fields">
+            <div class="profile-field"><label>Marca</label>${val(user.vehicle_brand)}</div>
+            <div class="profile-field"><label>Modelo</label>${val(user.vehicle_model)}</div>
+            <div class="profile-field"><label>Cor</label>${val(user.vehicle_color)}</div>
+            <div class="profile-field"><label>Placa</label>${val(user.vehicle_plate)}</div>
+            <div class="profile-field"><label>Lugares disponíveis</label>${val(user.vehicle_seats)}</div>
+          </div>
+        </div>` : "";
+
+      const roleSwitchHtml = !isAdmin ? `
+        <div class="role-switch-box">
+          <div class="profile-section-title">Tipo de conta</div>
+          <p style="font-size:.88rem;color:var(--text-2);margin:0 0 14px;">
+            ${isDriver
+              ? "Cadastrado como <strong>Motorista</strong> — pode oferecer caronas."
+              : "Cadastrado como <strong>Passageiro</strong> — pode reservar caronas."}
+          </p>
+          <div class="role-selector" style="max-width:420px;">
+            <label class="role-option${!isDriver ? " selected" : ""}" id="opt-passageiro" onclick="selectRole('passenger')">
+              <input type="radio" name="role-switch" value="passenger" ${!isDriver ? "checked" : ""} style="display:none"/>
+              <span class="role-icon">🎓</span><span class="role-label">Passageiro</span><span class="role-desc">Procuro caronas</span>
+            </label>
+            <label class="role-option${isDriver ? " selected" : ""}" id="opt-motorista" onclick="selectRole('driver')">
+              <input type="radio" name="role-switch" value="driver" ${isDriver ? "checked" : ""} style="display:none"/>
+              <span class="role-icon">🚗</span><span class="role-label">Motorista</span><span class="role-desc">Ofereço caronas</span>
+            </label>
+          </div>
+          <button class="btn btn-primary" style="margin-top:14px;" id="saveRoleBtn" onclick="saveRole()" disabled>
+            Salvar alteração
+          </button>
+        </div>` : "";
+
+      document.getElementById("profileRoot").innerHTML = `
+        <div class="profile-card reveal">
+          <div class="profile-header">
+            <div class="profile-avatar-lg">${avatarText}</div>
+            <div class="profile-header-info">
+              <h2 class="profile-name">${user.full_name || user.name || "Usuário"}</h2>
+              <div class="profile-meta">
+                <span class="perfil-badge ${roleClass}">${roleLabel}</span>
+                ${user.rgm ? `<span>RGM ${user.rgm}</span>` : ""}
+                ${user.course ? `<span>· ${user.course}</span>` : ""}
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-body">
+            <div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div class="profile-section-title" style="margin:0;">Dados pessoais</div>
+                <button class="btn btn-ghost btn-sm" onclick="renderEditMode()">✏️ Editar</button>
+              </div>
+              <div class="profile-fields">
+                <div class="profile-field"><label>Nome completo</label>${val(user.full_name || user.name)}</div>
+                <div class="profile-field"><label>RGM</label>${val(user.rgm)}</div>
+                <div class="profile-field"><label>Curso</label>${val(user.course)}</div>
+                <div class="profile-field"><label>Cidade</label>${val(user.city || user.cidade)}</div>
+                <div class="profile-field"><label>Bairro</label>${val(user.neighborhood)}</div>
+                <div class="profile-field"><label>Telefone</label>${val(user.phone)}</div>
+              </div>
+            </div>
+
+            ${vehicleHtml}
+            ${roleSwitchHtml}
+          </div>
+
+          <div class="profile-actions">
+            <a href="dashboard.html" class="btn btn-ghost">← Dashboard</a>
+            <button class="btn btn-ghost btn-danger" onclick="CESUCAR.modal({
+              icon:'⎋', title:'Sair da conta', body:'Deseja mesmo sair?',
+              confirmLabel:'Sair', cancel:true, onConfirm:()=>CESUCAR.logout()
+            })">Sair da conta</button>
+          </div>
+        </div>`;
+
+      requestAnimationFrame(() =>
+        document.querySelectorAll(".reveal").forEach((el, i) =>
+          setTimeout(() => el.classList.add("visible"), i * 60)));
+    }
+
+    // ── Edit mode ────────────────────────────────────────────────
+    function renderEditMode() {
+      const user = CESUCAR.currentUser();
+      const role = user?.role || "";
+      const isDriver = role === "DRIVER";
+      const avatarText = (user.full_name || user.name || "?")
+        .split(" ").filter(Boolean).map(p => p[0]).join("").toUpperCase().slice(0, 2);
+
+      const cursoOptions = CURSOS.map(c =>
+        `<option${c === user.course ? " selected" : ""}>${c}</option>`).join("");
+
+      const cidadeOptions = CIDADES.map(c =>
+        `<option${c === (user.city || user.cidade) ? " selected" : ""}>${c}</option>`).join("");
+
+      const vehicleEditHtml = isDriver ? `
+        <div class="edit-section" style="margin-top:4px;">
+          <div class="profile-section-title">🚗 Veículo</div>
+          <div class="profile-fields">
+            <div class="form-group">
+              <label class="form-label">Marca</label>
+              <input class="form-input" type="text" id="e-vbrand" value="${user.vehicle_brand || ""}" placeholder="Ex.: Volkswagen" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Modelo</label>
+              <input class="form-input" type="text" id="e-vmodel" value="${user.vehicle_model || ""}" placeholder="Ex.: Gol 2020" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Cor</label>
+              <input class="form-input" type="text" id="e-vcolor" value="${user.vehicle_color || ""}" placeholder="Ex.: Prata" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Placa</label>
+              <input class="form-input" type="text" id="e-vplate" value="${user.vehicle_plate || ""}" placeholder="Ex.: ABC-1D23" maxlength="8" style="text-transform:uppercase" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Lugares disponíveis</label>
+              <select class="form-select" id="e-vseats">
+                <option value="">—</option>
+                ${[1,2,3,4,5,6].map(n => `<option value="${n}"${user.vehicle_seats == n ? " selected" : ""}>${n}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+        </div>` : "";
+
+      document.getElementById("profileRoot").innerHTML = `
+        <div class="profile-card reveal">
+          <div class="profile-header">
+            <div class="profile-avatar-lg">${avatarText}</div>
+            <div class="profile-header-info">
+              <h2 class="profile-name">Editar perfil</h2>
+              <div class="profile-meta">Altere seus dados e clique em Salvar</div>
+            </div>
+          </div>
+
+          <div class="profile-body">
+            <div class="edit-section">
+              <div class="profile-section-title">Dados pessoais</div>
+              <div class="profile-fields">
+                <div class="form-group">
+                  <label class="form-label">Nome completo</label>
+                  <input class="form-input" type="text" id="e-name" value="${user.full_name || user.name || ""}" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Telefone</label>
+                  <input class="form-input" type="tel" id="e-phone" value="${user.phone || ""}" placeholder="(51) 99999-0000" maxlength="15" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Curso</label>
+                  <select class="form-select" id="e-course">
+                    <option value="">Selecione</option>
+                    ${cursoOptions}
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Cidade</label>
+                  <select class="form-select" id="e-city" onchange="onEditCidadeChange()">
+                    <option value="">Selecione</option>
+                    ${cidadeOptions}
+                  </select>
+                </div>
+                <div class="form-group" id="e-bairroWrap">
+                  <label class="form-label">Bairro</label>
+                  <select class="form-select" id="e-bairro">
+                    <option value="">Selecione primeiro a cidade</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            ${vehicleEditHtml}
+
+            <div class="edit-actions">
+              <button class="btn btn-primary" id="saveEditBtn" onclick="saveEdit()">Salvar alterações</button>
+              <button class="btn btn-ghost" onclick="renderProfile()">Cancelar</button>
+            </div>
+          </div>
+        </div>`;
+
+      // Populate neighborhood based on current city
+      onEditCidadeChange(user.neighborhood);
+
+      // Phone mask
+      document.getElementById("e-phone").addEventListener("input", function () {
+        let v = this.value.replace(/\D/g, "");
+        if (v.length <= 10) v = v.replace(/(\d{2})(\d{4})(\d{0,4})/, "($1) $2-$3");
+        else v = v.replace(/(\d{2})(\d{5})(\d{0,4})/, "($1) $2-$3");
+        this.value = v.trim().replace(/-$/, "");
+      });
+
+      requestAnimationFrame(() =>
+        document.querySelectorAll(".reveal").forEach(el => el.classList.add("visible")));
+    }
+
+    function onEditCidadeChange(currentBairro) {
+      const city = document.getElementById("e-city")?.value || "";
+      const bairros = CESUCAR.getNeighborhoods(city);
+      const wrap = document.getElementById("e-bairroWrap");
+      const select = document.getElementById("e-bairro");
+      if (!wrap || !select) return;
+      if (!bairros.length) { wrap.hidden = true; return; }
+      wrap.hidden = false;
+      select.innerHTML = `<option value="">Selecione o bairro</option>` +
+        bairros.map(b => `<option${b === currentBairro ? " selected" : ""}>${b}</option>`).join("");
+    }
+
+    async function saveEdit() {
+      const btn = document.getElementById("saveEditBtn");
+      const name  = document.getElementById("e-name").value.trim();
+      const phone = document.getElementById("e-phone").value.trim();
+      const course = document.getElementById("e-course").value;
+      const city  = document.getElementById("e-city").value;
+      const bairro = document.getElementById("e-bairro")?.value || "";
+
+      if (!name) return CESUCAR.toast("Informe seu nome.", "error");
+      if (phone && phone.replace(/\D/g,"").length < 10)
+        return CESUCAR.toast("Telefone inválido — informe DDD + número.", "error");
+
+      const fields = {
+        full_name:  name || undefined,
+        phone:      phone || undefined,
+        course:     course || undefined,
+        city:       city || undefined,
+        neighborhood: bairro || undefined,
+      };
+
+      // Vehicle fields (driver only)
+      const vbrand = document.getElementById("e-vbrand")?.value.trim();
+      const vmodel = document.getElementById("e-vmodel")?.value.trim();
+      const vcolor = document.getElementById("e-vcolor")?.value.trim();
+      const vplate = document.getElementById("e-vplate")?.value.trim().toUpperCase();
+      const vseats = document.getElementById("e-vseats")?.value;
+      if (vbrand !== undefined) fields.vehicle_brand = vbrand || undefined;
+      if (vmodel !== undefined) fields.vehicle_model = vmodel || undefined;
+      if (vcolor !== undefined) fields.vehicle_color = vcolor || undefined;
+      if (vplate !== undefined) fields.vehicle_plate = vplate || undefined;
+      if (vseats !== undefined) fields.vehicle_seats = vseats ? parseInt(vseats) : undefined;
+
+      // Remove undefined keys
+      Object.keys(fields).forEach(k => fields[k] === undefined && delete fields[k]);
+
+      CESUCAR.showLoading(btn, "Salvando...");
+      const result = await CESUCAR.updateMe(fields);
+      CESUCAR.hideLoading(btn);
+
+      if (result.ok) {
+        CESUCAR.toast("Perfil atualizado com sucesso!", "success");
+        renderProfile();
+        CESUCAR.setupNav();
+      } else {
+        CESUCAR.toast(result.error || "Erro ao salvar.", "error");
+      }
+    }
+
+    // ── Role switch ──────────────────────────────────────────────
+    let _pendingRole = null;
+
+    function selectRole(role) {
+      const user = CESUCAR.currentUser();
+      const currentNorm = (user?.role || "").toLowerCase() === "driver" ? "driver" : "passenger";
+      _pendingRole = role;
+      document.querySelectorAll(".role-option").forEach(el => el.classList.remove("selected"));
+      document.getElementById(role === "driver" ? "opt-motorista" : "opt-passageiro")?.classList.add("selected");
+      const btn = document.getElementById("saveRoleBtn");
+      if (btn) btn.disabled = (role === currentNorm);
+    }
+
+    async function saveRole() {
+      if (!_pendingRole) return;
+      const btn = document.getElementById("saveRoleBtn");
+      CESUCAR.showLoading(btn, "Salvando...");
+      const result = await CESUCAR.updateMe({ role: _pendingRole });
+      CESUCAR.hideLoading(btn);
+      if (result.ok) {
+        CESUCAR.toast(_pendingRole === "driver" ? "Perfil alterado para Motorista!" : "Perfil alterado para Passageiro!", "success");
+        renderProfile();
+        CESUCAR.setupNav();
+      } else {
+        CESUCAR.toast(result.error || "Erro ao salvar.", "error");
+      }
+    }
+
+    renderProfile();
+  </script>
+</body>
+</html>

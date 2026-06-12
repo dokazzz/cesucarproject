@@ -1,0 +1,13 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/cadastro",        "destination": "/cadastro.html" },
+    { "source": "/login",           "destination": "/login.html" },
+    { "source": "/dashboard",       "destination": "/dashboard.html" },
+    { "source": "/oferecer-carona", "destination": "/oferecer-carona.html" },
+    { "source": "/procurar-carona", "destination": "/procurar-carona.html" },
+    { "source": "/perfil",          "destination": "/perfil.html" },
+    { "source": "/admin",           "destination": "/admin.html" }
+  ]
+}

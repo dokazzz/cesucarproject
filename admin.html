@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel Admin — CESUCAR</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── KPI Cards ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 500px) { .kpi-grid { grid-template-columns: 1fr; } }
+
+    .kpi-card-v2 {
+      background: var(--card-bg, #fff);
+      border: 1px solid var(--glass-border, #e2e8f0);
+      border-radius: 16px;
+      padding: 24px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .kpi-card-v2:hover { box-shadow: 0 8px 24px rgba(0,0,0,.1); transform: translateY(-2px); }
+
+    .kpi-icon-box {
+      width: 56px; height: 56px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px;
+      flex-shrink: 0;
+    }
+    .kpi-icon-box.blue   { background: #dbeafe; }
+    .kpi-icon-box.green  { background: #dcfce7; }
+    .kpi-icon-box.orange { background: #ffedd5; }
+    .kpi-icon-box.purple { background: #ede9fe; }
+
+    .kpi-card-v2 .kpi-number {
+      font-size: 2.2rem;
+      font-weight: 800;
+      line-height: 1;
+      color: var(--text-primary, #0f172a);
+    }
+    .kpi-card-v2 .kpi-label {
+      font-size: .78rem;
+      color: var(--text-muted, #64748b);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-top: 4px;
+    }
+
+    /* ── Section layout ── */
+    .admin-section { margin-bottom: 28px; }
+    .admin-section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-primary, #0f172a);
+      margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .admin-section-title::before {
+      content: "";
+      display: inline-block;
+      width: 4px; height: 18px;
+      border-radius: 2px;
+      background: var(--accent, #f97316);
+    }
+
+    /* ── Activity feed ── */
+    .activity-feed {
+      background: var(--card-bg, #fff);
+      border: 1px solid var(--glass-border, #e2e8f0);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .activity-feed-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--glass-border, #e2e8f0);
+      transition: background .15s;
+    }
+    .activity-feed-item:last-child { border-bottom: none; }
+    .activity-feed-item:hover { background: var(--hover-bg, #f8fafc); }
+    .af-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      margin-top: 6px; flex-shrink: 0;
+      background: var(--accent, #f97316);
+    }
+    .af-action { font-size: .8rem; font-weight: 600; color: var(--text-primary, #0f172a); }
+    .af-meta   { font-size: .75rem; color: var(--text-muted, #64748b); margin-top: 2px; }
+
+    /* ── Recent users grid ── */
+    .recent-users-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .recent-user-card {
+      background: var(--card-bg, #fff);
+      border: 1px solid var(--glass-border, #e2e8f0);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex; align-items: center; gap: 12px;
+      transition: box-shadow .2s;
+    }
+    .recent-user-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+
+    /* ── User table enhancements ── */
+    .admin-search-bar {
+      background: var(--card-bg, #fff);
+      border: 1px solid var(--glass-border, #e2e8f0);
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex; flex-wrap: wrap; gap: 12px;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+    .admin-search-bar .form-input,
+    .admin-search-bar .form-select { flex: 1; min-width: 140px; }
+
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+      margin-right: 5px;
+    }
+    .status-dot.active   { background: #22c55e; }
+    .status-dot.inactive { background: #94a3b8; }
+
+    /* ── User detail modal ── */
+    .user-detail-modal { max-width: 540px; width: 94%; }
+    .ud-header {
+      display: flex; align-items: center; gap: 16px;
+      padding: 20px 24px; border-bottom: 1px solid var(--glass-border, #e2e8f0);
+    }
+    .ud-avatar {
+      width: 60px; height: 60px; border-radius: 50%;
+      background: var(--accent, #f97316);
+      color: #fff; font-weight: 700; font-size: 1.4rem;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .ud-name   { font-size: 1.1rem; font-weight: 700; color: var(--text-primary, #0f172a); }
+    .ud-rgm    { font-size: .82rem; color: var(--text-muted, #64748b); }
+    .ud-body   { padding: 20px 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .ud-field label { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em;
+                      color: var(--text-muted, #64748b); font-weight: 600; }
+    .ud-field p { font-size: .9rem; color: var(--text-primary, #0f172a); margin-top: 3px; }
+    .ud-section-title {
+      grid-column: 1 / -1;
+      font-size: .8rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em;
+      color: var(--accent, #f97316);
+      padding-top: 8px; border-top: 1px solid var(--glass-border, #e2e8f0);
+    }
+    .ud-footer {
+      padding: 16px 24px; border-top: 1px solid var(--glass-border, #e2e8f0);
+      display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;
+    }
+
+    /* ── Tabs ── */
+    .admin-tabs-v2 {
+      display: flex; gap: 4px;
+      background: var(--card-bg, #fff);
+      border: 1px solid var(--glass-border, #e2e8f0);
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 20px;
+      width: fit-content;
+    }
+    .admin-tab-v2 {
+      padding: 8px 20px;
+      border-radius: 9px;
+      font-size: .87rem; font-weight: 600;
+      border: none; background: transparent;
+      cursor: pointer;
+      color: var(--text-muted, #64748b);
+      transition: background .15s, color .15s;
+    }
+    .admin-tab-v2.active {
+      background: var(--accent, #f97316);
+      color: #fff;
+    }
+
+    /* ── Responsive table ── */
+    .table-wrap { overflow-x: auto; border-radius: 14px;
+                  border: 1px solid var(--glass-border, #e2e8f0); }
+    .admin-table { width: 100%; border-collapse: collapse; }
+    .admin-table th, .admin-table td { padding: 12px 14px; text-align: left; white-space: nowrap; }
+    .admin-table th { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em;
+                      color: var(--text-muted, #64748b); font-weight: 700;
+                      border-bottom: 1px solid var(--glass-border, #e2e8f0);
+                      background: var(--card-bg, #fff); }
+    .admin-table td { border-bottom: 1px solid var(--glass-border, #e2e8f0);
+                      background: var(--card-bg, #fff); font-size: .87rem; }
+    .admin-table tr:last-child td { border-bottom: none; }
+    .admin-table tr:hover td { background: var(--hover-bg, #f8fafc); }
+    .table-user { display: flex; align-items: center; gap: 10px; }
+    .table-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    .table-loading, .table-empty { text-align: center; padding: 32px; color: var(--text-muted, #64748b); }
+    .mono { font-family: monospace; }
+  </style>
+</head>
+<body class="app-page">
+  <div class="bg-mesh"></div>
+  <div class="bg-grid"></div>
+
+  <nav class="navbar">
+    <a href="index.html" class="navbar-logo">
+      <img src="logo.png" alt="CESUCAR" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+      <span class="navbar-logo-fallback">CESUCAR</span>
+    </a>
+    <ul class="navbar-links" id="navLinks"></ul>
+    <div class="navbar-right">
+      <div class="theme-toggle"></div>
+      <div id="navAuthArea"></div>
+      <button class="hamburger" id="hamburger" aria-label="Abrir menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="mobile-drawer" id="mobileDrawer"></div>
+
+  <main class="page-body">
+    <header class="page-head reveal">
+      <div class="section-tag">Administração</div>
+      <h1 class="page-title">Painel <span class="accent">Administrativo</span></h1>
+      <p>Gerencie usuários, caronas e monitore a plataforma em tempo real.</p>
+    </header>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid reveal">
+      <div class="kpi-card-v2">
+        <div class="kpi-icon-box blue">👥</div>
+        <div>
+          <div class="kpi-number" id="kpiUsers">—</div>
+          <div class="kpi-label">Total de usuários</div>
+        </div>
+      </div>
+      <div class="kpi-card-v2">
+        <div class="kpi-icon-box green">🚗</div>
+        <div>
+          <div class="kpi-number" id="kpiRides">—</div>
+          <div class="kpi-label">Caronas ativas</div>
+        </div>
+      </div>
+      <div class="kpi-card-v2">
+        <div class="kpi-icon-box orange">🚙</div>
+        <div>
+          <div class="kpi-number" id="kpiDrivers">—</div>
+          <div class="kpi-label">Motoristas</div>
+        </div>
+      </div>
+      <div class="kpi-card-v2">
+        <div class="kpi-icon-box purple">🎓</div>
+        <div>
+          <div class="kpi-number" id="kpiPassengers">—</div>
+          <div class="kpi-label">Passageiros</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="admin-tabs-v2 reveal" role="tablist">
+      <button class="admin-tab-v2 active" role="tab" onclick="showTab('users')" id="tab-users">Usuários</button>
+      <button class="admin-tab-v2" role="tab" onclick="showTab('activity')" id="tab-activity">Atividade recente</button>
+      <button class="admin-tab-v2" role="tab" onclick="showTab('logs')" id="tab-logs">Log de auditoria</button>
+    </div>
+
+    <!-- USERS PANEL -->
+    <section id="panel-users" class="admin-section reveal">
+      <div class="admin-search-bar">
+        <input class="form-input" id="searchUsers" placeholder="Buscar por nome, RGM ou curso…" oninput="filterUsers()" />
+        <select class="form-select" id="filterRole" onchange="filterUsers()" style="max-width:180px;">
+          <option value="">Todos os perfis</option>
+          <option value="ADMIN">Admin</option>
+          <option value="DRIVER">Motorista</option>
+          <option value="PASSENGER">Passageiro</option>
+        </select>
+        <select class="form-select" id="filterStatus" onchange="filterUsers()" style="max-width:160px;">
+          <option value="">Qualquer status</option>
+          <option value="active">Ativos</option>
+          <option value="inactive">Desativados</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table class="admin-table" id="usersTable">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>RGM</th>
+              <th>Perfil</th>
+              <th>Status</th>
+              <th>Cidade</th>
+              <th>Cadastro</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="usersTbody">
+            <tr><td colspan="7" class="table-loading">Carregando usuários…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- RECENT ACTIVITY PANEL -->
+    <section id="panel-activity" class="admin-section reveal" hidden>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div>
+          <div class="admin-section-title">Últimos eventos</div>
+          <div class="activity-feed" id="activityFeed">
+            <div class="activity-feed-item"><div class="af-meta">Carregando…</div></div>
+          </div>
+        </div>
+        <div>
+          <div class="admin-section-title">Novos usuários</div>
+          <div class="recent-users-grid" id="recentUsersGrid">
+            <div class="recent-user-card"><div class="af-meta">Carregando…</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AUDIT LOGS PANEL -->
+    <section id="panel-logs" class="admin-section reveal" hidden>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+        <button class="btn btn-ghost btn-sm" onclick="loadLogs()">Atualizar</button>
+      </div>
+      <div class="table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr><th>Data/hora</th><th>Ação</th><th>Detalhes</th></tr>
+          </thead>
+          <tbody id="logsTbody">
+            <tr><td colspan="3" class="table-loading">Carregando logs…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- ── User Detail Modal ── -->
+  <div class="modal-overlay" id="userDetailModal" hidden>
+    <div class="modal-card user-detail-modal" style="padding:0;">
+      <div class="ud-header">
+        <div class="ud-avatar" id="udAvatar">CE</div>
+        <div>
+          <div class="ud-name" id="udName">—</div>
+          <div class="ud-rgm" id="udRgm">RGM: —</div>
+          <div id="udBadge" style="margin-top:5px;"></div>
+        </div>
+      </div>
+      <div class="ud-body" id="udBody"></div>
+      <div class="ud-footer" id="udFooter"></div>
+    </div>
+  </div>
+
+  <!-- ── Role Change Modal ── -->
+  <div class="modal-overlay" id="roleModal" hidden>
+    <div class="modal-card">
+      <div class="modal-icon">⚙</div>
+      <div class="modal-title">Alterar perfil</div>
+      <div class="modal-body" id="roleModalBody"></div>
+      <div class="form-group" style="margin-top:16px;">
+        <label class="form-label">Novo perfil</label>
+        <select class="form-select" id="newRoleSelect">
+          <option value="PASSENGER">Passageiro</option>
+          <option value="DRIVER">Motorista</option>
+          <option value="ADMIN">Admin</option>
+        </select>
+      </div>
+      <div class="modal-btns">
+        <button class="btn btn-ghost" onclick="closeModal('roleModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmRoleChange()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Password Reset Modal ── -->
+  <div class="modal-overlay" id="pwdModal" hidden>
+    <div class="modal-card">
+      <div class="modal-icon">🔑</div>
+      <div class="modal-title">Redefinir senha</div>
+      <div class="modal-body" id="pwdModalBody"></div>
+      <div class="form-group" style="margin-top:16px;">
+        <label class="form-label">Nova senha (mínimo 6 caracteres)</label>
+        <input class="form-input" type="password" id="newPwdInput" placeholder="Nova senha" minlength="6" />
+      </div>
+      <div class="modal-btns">
+        <button class="btn btn-ghost" onclick="closeModal('pwdModal')">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmPwdReset()">Redefinir</button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-bottom">
+      <span>© 2026 CESUCAR — Centro Universitário CESUCA</span>
+      <nav class="footer-nav">
+        <a href="index.html">Início</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="procurar-carona.html">Caronas</a>
+        <a href="oferecer-carona.html">Oferecer carona</a>
+      </nav>
+    </div>
+  </footer>
+
+  <script src="js/app.js"></script>
+  <script>
+    CESUCAR.requireAuth();
+    const me = CESUCAR.currentUser();
+    if (!me || me.role !== "ADMIN") {
+      CESUCAR.toast("Acesso restrito ao administrador.", "error");
+      setTimeout(() => window.location.href = "dashboard.html", 1000);
+    }
+    CESUCAR.setupNav("admin");
+
+    let allUsers = [];
+    let pendingRoleUserId = null;
+    let pendingPwdUserId  = null;
+    let currentTab = "users";
+
+    // ── Tab switching ────────────────────────────────────────────────────────
+    function showTab(name) {
+      document.querySelectorAll(".admin-tab-v2").forEach(t => t.classList.remove("active"));
+      document.querySelectorAll(".admin-section").forEach(p => p.hidden = true);
+      document.getElementById("tab-" + name).classList.add("active");
+      document.getElementById("panel-" + name).hidden = false;
+      currentTab = name;
+      if (name === "logs")     loadLogs();
+      if (name === "activity") loadActivity();
+    }
+
+    // ── Formatters ───────────────────────────────────────────────────────────
+    function roleBadge(role) {
+      const map = {
+        ADMIN:     ["badge-orange", "Admin"],
+        DRIVER:    ["badge-blue",   "Motorista"],
+        PASSENGER: ["badge-green",  "Passageiro"],
+      };
+      const [cls, label] = map[role] || ["badge-gray", role];
+      return `<span class="badge ${cls}">${label}</span>`;
+    }
+
+    function statusHtml(isActive) {
+      return isActive
+        ? `<span class="status-dot active"></span>Ativo`
+        : `<span class="status-dot inactive"></span>Inativo`;
+    }
+
+    function fmtDate(iso) {
+      if (!iso) return "—";
+      return new Date(iso).toLocaleDateString("pt-BR", { day:"2-digit", month:"2-digit", year:"numeric" });
+    }
+
+    function fmtDateTime(iso) {
+      if (!iso) return "—";
+      return new Date(iso).toLocaleString("pt-BR", { day:"2-digit", month:"2-digit", hour:"2-digit", minute:"2-digit" });
+    }
+
+    function actionLabel(action) {
+      const map = {
+        USER_REGISTERED: "Cadastro",
+        USER_LOGIN:      "Login",
+        USER_LOGOUT:     "Logout",
+        USER_UPDATED:    "Perfil atualizado",
+        USER_DEACTIVATED:"Conta desativada",
+        USER_DELETED:    "Usuário excluído",
+        PASSWORD_CHANGED:"Senha alterada",
+        RIDE_CREATED:    "Carona criada",
+        RIDE_UPDATED:    "Carona atualizada",
+        RIDE_CANCELLED:  "Carona cancelada",
+        REQUEST_CREATED: "Reserva criada",
+        REQUEST_CANCELLED:"Reserva cancelada",
+        ADMIN_ACTION:    "Ação admin",
+      };
+      return map[action] || action;
+    }
+
+    // ── Filter ───────────────────────────────────────────────────────────────
+    function filterUsers() {
+      const q      = document.getElementById("searchUsers").value.toLowerCase();
+      const role   = document.getElementById("filterRole").value;
+      const status = document.getElementById("filterStatus").value;
+      const filtered = allUsers.filter(u => {
+        const matchText = !q
+          || (u.full_name || u.name || "").toLowerCase().includes(q)
+          || (u.rgm || "").includes(q)
+          || (u.course || "").toLowerCase().includes(q);
+        const matchRole   = !role   || u.role === role;
+        const matchStatus = !status
+          || (status === "active"   &&  u.is_active)
+          || (status === "inactive" && !u.is_active);
+        return matchText && matchRole && matchStatus;
+      });
+      renderUsersTable(filtered);
+    }
+
+    // ── Table render ─────────────────────────────────────────────────────────
+    function renderUsersTable(users) {
+      const tbody = document.getElementById("usersTbody");
+      if (!users.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="table-empty">Nenhum usuário encontrado.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = users.map(u => {
+        const name = u.full_name || u.name || "—";
+        const isAdmin = u.role === "ADMIN";
+        return `
+          <tr>
+            <td>
+              <div class="table-user">
+                <div class="avatar avatar-sm">${u.avatar || name[0]}</div>
+                <span>${name}</span>
+              </div>
+            </td>
+            <td class="mono">${u.rgm || "—"}</td>
+            <td>${roleBadge(u.role)}</td>
+            <td style="font-size:.83rem;">${statusHtml(u.is_active !== false)}</td>
+            <td>${u.city || "—"}</td>
+            <td style="font-size:.82rem;">${fmtDate(u.created_at)}</td>
+            <td>
+              <div class="table-actions">
+                <button class="btn btn-ghost btn-xs" onclick="openUserDetail('${u.id}')">Ver</button>
+                ${!isAdmin ? `
+                  <button class="btn btn-ghost btn-xs" onclick="openRoleModal('${u.id}','${name.replace(/'/g,"")}','${u.role}')">Perfil</button>
+                  <button class="btn btn-ghost btn-xs" onclick="openPwdModal('${u.id}','${name.replace(/'/g,"")}')">Senha</button>
+                  <button class="btn btn-ghost btn-xs" onclick="toggleActive('${u.id}','${name.replace(/'/g,"")}',${!!u.is_active})">
+                    ${u.is_active !== false ? "Desativar" : "Ativar"}
+                  </button>
+                  <button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}','${name.replace(/'/g,"")}')">Excluir</button>
+                ` : `<span class="badge badge-orange">Admin</span>`}
+              </div>
+            </td>
+          </tr>`;
+      }).join("");
+    }
+
+    // ── Data loaders ──────────────────────────────────────────────────────────
+    async function loadUsers() {
+      const res = await CESUCAR.apiFetch("/admin/users");
+      if (res && res.error) {
+        document.getElementById("usersTbody").innerHTML =
+          `<tr><td colspan="7" class="table-empty">Erro: ${res.error}</td></tr>`;
+        return;
+      }
+      allUsers = Array.isArray(res) ? res : (res.users || []);
+      filterUsers();
+    }
+
+    async function loadStats() {
+      const res = await CESUCAR.apiFetch("/admin/stats");
+      if (!res || res.error) return;
+      document.getElementById("kpiUsers").textContent     = res.total_users      ?? "—";
+      document.getElementById("kpiRides").textContent     = res.active_rides     ?? "—";
+      document.getElementById("kpiDrivers").textContent   = res.total_drivers    ?? "—";
+      document.getElementById("kpiPassengers").textContent = res.total_passengers ?? "—";
+    }
+
+    async function loadActivity() {
+      const res = await CESUCAR.adminGetRecentActivity();
+      const logs  = res.recent_logs  || [];
+      const users = res.recent_users || [];
+
+      const feed = document.getElementById("activityFeed");
+      if (!logs.length) {
+        feed.innerHTML = `<div class="activity-feed-item"><div class="af-meta">Nenhum evento registrado.</div></div>`;
+      } else {
+        feed.innerHTML = logs.map(l => `
+          <div class="activity-feed-item">
+            <div class="af-dot"></div>
+            <div>
+              <div class="af-action">${actionLabel(l.action)}</div>
+              <div class="af-meta">${fmtDateTime(l.created_at)}${l.details ? " · " + JSON.stringify(l.details).slice(0,60) : ""}</div>
+            </div>
+          </div>`).join("");
+      }
+
+      const grid = document.getElementById("recentUsersGrid");
+      if (!users.length) {
+        grid.innerHTML = `<div class="recent-user-card"><div class="af-meta">Nenhum usuário.</div></div>`;
+      } else {
+        grid.innerHTML = users.map(u => {
+          const name = u.full_name || u.name || "Usuário";
+          return `
+            <div class="recent-user-card">
+              <div class="avatar avatar-sm">${u.avatar || name[0]}</div>
+              <div>
+                <div style="font-size:.87rem;font-weight:600;">${name}</div>
+                <div style="font-size:.75rem;color:var(--text-muted,#64748b);">${roleBadge(u.role)} · RGM ${u.rgm}</div>
+              </div>
+            </div>`;
+        }).join("");
+      }
+    }
+
+    async function loadLogs() {
+      document.getElementById("logsTbody").innerHTML =
+        `<tr><td colspan="3" class="table-loading">Carregando…</td></tr>`;
+      const res  = await CESUCAR.apiFetch("/admin/audit-logs");
+      const logs = Array.isArray(res) ? res : (res.logs || []);
+      const tbody = document.getElementById("logsTbody");
+      if (!logs.length) {
+        tbody.innerHTML = `<tr><td colspan="3" class="table-empty">Nenhum log registrado.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = logs.map(l => `
+        <tr>
+          <td class="mono" style="font-size:.8rem;">${fmtDateTime(l.created_at)}</td>
+          <td>${roleBadge(l.action) ? "" : ""}<span class="badge badge-gray">${actionLabel(l.action)}</span></td>
+          <td style="font-size:.8rem;color:var(--text-muted,#64748b);">
+            ${l.details ? JSON.stringify(l.details).slice(0,120) : "—"}
+          </td>
+        </tr>`).join("");
+    }
+
+    // ── User detail modal ─────────────────────────────────────────────────────
+    async function openUserDetail(userId) {
+      const res = await CESUCAR.adminGetUser(userId);
+      if (res.error) { CESUCAR.toast("Erro: " + res.error, "error"); return; }
+      const u = res;
+      const name = u.full_name || u.name || "—";
+      const isDriver = u.role === "DRIVER";
+
+      document.getElementById("udAvatar").textContent = u.avatar || name[0];
+      document.getElementById("udName").textContent   = name;
+      document.getElementById("udRgm").textContent    = "RGM: " + (u.rgm || "—");
+      document.getElementById("udBadge").innerHTML    = roleBadge(u.role) + " " + statusHtml(u.is_active !== false);
+
+      const body = document.getElementById("udBody");
+      body.innerHTML = `
+        <div class="ud-section-title">Informações pessoais</div>
+        <div class="ud-field"><label>Telefone</label><p>${u.phone || "—"}</p></div>
+        <div class="ud-field"><label>Curso</label><p>${u.course || "—"}</p></div>
+        <div class="ud-field"><label>Cidade</label><p>${u.city || "—"}</p></div>
+        <div class="ud-field"><label>Bairro</label><p>${u.neighborhood || "—"}</p></div>
+        <div class="ud-field"><label>Cadastro</label><p>${fmtDate(u.created_at)}</p></div>
+        <div class="ud-field"><label>Status</label><p>${u.is_active !== false ? "Ativo" : "Desativado"}</p></div>
+        ${isDriver ? `
+        <div class="ud-section-title">Veículo</div>
+        <div class="ud-field"><label>Modelo</label><p>${u.vehicle_model || "—"}</p></div>
+        <div class="ud-field"><label>Marca</label><p>${u.vehicle_brand || "—"}</p></div>
+        <div class="ud-field"><label>Cor</label><p>${u.vehicle_color || "—"}</p></div>
+        <div class="ud-field"><label>Capacidade</label><p>${u.vehicle_seats ? u.vehicle_seats + " lugares" : "—"}</p></div>
+        ` : ""}`;
+
+      const footer = document.getElementById("udFooter");
+      const isAdminUser = u.role === "ADMIN";
+      footer.innerHTML = `
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('userDetailModal')">Fechar</button>
+        ${!isAdminUser ? `
+          <button class="btn btn-ghost btn-sm" onclick="closeModal('userDetailModal');openRoleModal('${u.id}','${name.replace(/'/g,"")}','${u.role}')">Alterar perfil</button>
+          <button class="btn btn-ghost btn-sm" onclick="closeModal('userDetailModal');openPwdModal('${u.id}','${name.replace(/'/g,"")}')">Redefinir senha</button>
+          <button class="btn btn-ghost btn-sm" onclick="closeModal('userDetailModal');toggleActive('${u.id}','${name.replace(/'/g,"")}',${!!u.is_active})">
+            ${u.is_active !== false ? "Desativar conta" : "Ativar conta"}
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="closeModal('userDetailModal');deleteUser('${u.id}','${name.replace(/'/g,"")}')">Excluir</button>
+        ` : ""}`;
+
+      document.getElementById("userDetailModal").hidden = false;
+    }
+
+    // ── Role modal ────────────────────────────────────────────────────────────
+    function openRoleModal(userId, name, currentRole) {
+      pendingRoleUserId = userId;
+      document.getElementById("roleModalBody").textContent = `Usuário: ${name}`;
+      document.getElementById("newRoleSelect").value = currentRole;
+      document.getElementById("roleModal").hidden = false;
+    }
+
+    async function confirmRoleChange() {
+      if (!pendingRoleUserId) return;
+      const newRole = document.getElementById("newRoleSelect").value;
+      try {
+        await CESUCAR.apiFetch(`/admin/users/${pendingRoleUserId}/role`, {
+          method: "PATCH",
+          body: JSON.stringify({ role: newRole }),
+        });
+        CESUCAR.toast("Perfil atualizado.", "success");
+        closeModal("roleModal");
+        loadUsers(); loadStats();
+      } catch (err) {
+        CESUCAR.toast("Erro: " + (err.error || "desconhecido"), "error");
+      }
+    }
+
+    // ── Password modal ────────────────────────────────────────────────────────
+    function openPwdModal(userId, name) {
+      pendingPwdUserId = userId;
+      document.getElementById("pwdModalBody").textContent = `Usuário: ${name}`;
+      document.getElementById("newPwdInput").value = "";
+      document.getElementById("pwdModal").hidden = false;
+    }
+
+    async function confirmPwdReset() {
+      if (!pendingPwdUserId) return;
+      const pwd = document.getElementById("newPwdInput").value;
+      if (pwd.length < 6) { CESUCAR.toast("Senha deve ter pelo menos 6 caracteres.", "error"); return; }
+      try {
+        await CESUCAR.apiFetch(`/admin/users/${pendingPwdUserId}/reset-password`, {
+          method: "PATCH",
+          body: JSON.stringify({ new_password: pwd }),
+        });
+        CESUCAR.toast("Senha redefinida.", "success");
+        closeModal("pwdModal");
+      } catch (err) {
+        CESUCAR.toast("Erro: " + (err.error || "desconhecido"), "error");
+      }
+    }
+
+    // ── Toggle active ─────────────────────────────────────────────────────────
+    function toggleActive(userId, name, currentActive) {
+      const newState = !currentActive;
+      CESUCAR.modal({
+        icon: newState ? "✓" : "!",
+        title: newState ? "Ativar conta" : "Desativar conta",
+        body: `${newState ? "Ativar" : "Desativar"} a conta de <strong>${name}</strong>?`,
+        confirmLabel: newState ? "Ativar" : "Desativar",
+        onConfirm: async () => {
+          const res = await CESUCAR.adminToggleActive(userId, newState);
+          if (res && res.error) { CESUCAR.toast("Erro: " + res.error, "error"); return; }
+          CESUCAR.toast(newState ? "Conta ativada." : "Conta desativada.", "success");
+          loadUsers();
+        },
+      });
+    }
+
+    // ── Delete user ───────────────────────────────────────────────────────────
+    function deleteUser(userId, name) {
+      CESUCAR.modal({
+        icon: "⚠",
+        title: "Excluir usuário",
+        body: `Deseja excluir permanentemente a conta de <strong>${name}</strong>? Esta ação não pode ser desfeita.`,
+        confirmLabel: "Excluir permanentemente",
+        onConfirm: async () => {
+          try {
+            await CESUCAR.apiFetch(`/admin/users/${userId}`, { method: "DELETE" });
+            CESUCAR.toast("Usuário excluído.", "success");
+            loadUsers(); loadStats();
+          } catch (err) {
+            CESUCAR.toast("Erro: " + (err.error || "desconhecido"), "error");
+          }
+        },
+      });
+    }
+
+    // ── Generic close ─────────────────────────────────────────────────────────
+    function closeModal(id) {
+      document.getElementById(id).hidden = true;
+      pendingRoleUserId = null;
+      pendingPwdUserId  = null;
+    }
+
+    // Close on overlay click
+    ["userDetailModal", "roleModal", "pwdModal"].forEach(id => {
+      document.getElementById(id).addEventListener("click", function(e) {
+        if (e.target === this) closeModal(id);
+      });
+    });
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    loadStats();
+    loadUsers();
+  </script>
+</body>
+</html>
