@@ -1194,9 +1194,10 @@ section[id], div[id].section {
 
 .dash-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 340px));
   gap: 14px;
   margin-bottom: 22px;
+  justify-content: center;
 }
 
 .kpi {
@@ -2070,6 +2071,10 @@ section[id], div[id].section {
     display: none;
   }
 
+  #navAuthArea {
+    display: none;
+  }
+
   .hamburger {
     display: inline-flex;
   }
@@ -2899,5 +2904,121 @@ body.user-logged-in #drawer {
   }
   [data-theme="dark"] .hero-brand-logo img {
     height: 80px;
+  }
+}
+
+/* ================================================================
+   MOBILE RESPONSIVENESS FIXES
+   Prevent horizontal scroll, improve small-screen layouts
+   ================================================================ */
+
+html {
+  overflow-x: hidden;
+}
+
+/* Ensure form controls never exceed viewport */
+input,
+select,
+textarea {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* ---- Very small phones (≤ 480px) ---- */
+@media (max-width: 480px) {
+  .page-title {
+    font-size: 1.75rem;
+  }
+
+  /* Search panel: tighter padding */
+  .search-panel {
+    padding: 14px;
+  }
+
+  /* Results header: sort select takes full width */
+  .results-header {
+    gap: 10px;
+  }
+
+  .results-header select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Driver card buttons: wrap when multiple actions */
+  .driver-btns {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  /* Driver actions: stack price above buttons on tiny screens */
+  .driver-actions {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .driver-price {
+    text-align: left;
+  }
+
+  /* Modal: tighter padding, stacked actions */
+  .modal-card {
+    padding: 16px;
+  }
+
+  .modal-actions {
+    flex-wrap: wrap;
+  }
+
+  .modal-actions .btn {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  /* KPI cards: reduce padding */
+  .kpi {
+    padding: 16px;
+  }
+
+  /* Dash grid (KPIs): single column with no min-width */
+  .dash-grid {
+    grid-template-columns: 1fr;
+    justify-content: stretch;
+  }
+
+  /* Ride card: reduce padding */
+  .ride-card {
+    padding: 14px;
+    gap: 10px;
+  }
+
+  /* Section tag + page head: tighter margins */
+  .page-head {
+    margin-bottom: 16px;
+  }
+
+  /* Filter chips: smaller on tiny screens */
+  .filter-chip {
+    font-size: 0.78rem;
+    padding: 0 10px;
+    min-height: 30px;
+  }
+
+  /* Driver route: allow wrapping for long city names */
+  .driver-route {
+    flex-wrap: wrap;
+  }
+
+  /* Form grid: always single column */
+  .form-grid-2,
+  .search-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Navbar logo: keep smaller on tiny phones */
+  .navbar-logo img,
+  .nav-logo img {
+    height: 70px;
   }
 }

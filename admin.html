@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR" data-theme="light">
 <head>
   <meta charset="UTF-8" />
@@ -407,7 +407,7 @@
     </div>
   </footer>
 
-  <script src="js/app.js"></script>
+  <script src="js/app.js?v=20260613d"></script>
   <script>
     CESUCAR.requireAuth();
     const me = CESUCAR.currentUser();
@@ -644,6 +644,7 @@
         <div class="ud-field"><label>Marca</label><p>${u.vehicle_brand || "—"}</p></div>
         <div class="ud-field"><label>Cor</label><p>${u.vehicle_color || "—"}</p></div>
         <div class="ud-field"><label>Capacidade</label><p>${u.vehicle_seats ? u.vehicle_seats + " lugares" : "—"}</p></div>
+        <div class="ud-field"><label>Placa</label><p>${u.vehicle_plate || "—"}</p></div>
         ` : ""}`;
 
       const footer = document.getElementById("udFooter");
@@ -766,3 +767,6 @@
   </script>
 </body>
 </html>
+
+
+

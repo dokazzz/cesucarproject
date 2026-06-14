@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR" data-theme="light">
 <head>
   <meta charset="UTF-8" />
@@ -117,7 +117,7 @@
     </div>
   </footer>
 
-  <script src="js/app.js"></script>
+  <script src="js/app.js?v=20260613d"></script>
   <script>
     CESUCAR.requireAuth();
     CESUCAR.setupNav();
@@ -387,7 +387,9 @@
       const vbrand = document.getElementById("e-vbrand")?.value.trim();
       const vmodel = document.getElementById("e-vmodel")?.value.trim();
       const vcolor = document.getElementById("e-vcolor")?.value.trim();
-      const vplate = document.getElementById("e-vplate")?.value.trim().toUpperCase();
+      const vplate = document.getElementById("e-vplate")?.value.trim().toUpperCase().replace(/-/g, "");
+      if (vplate && !/^[A-Z]{3}[0-9]{4}$|^[A-Z]{3}[0-9][A-Z][0-9]{2}$/.test(vplate))
+        return CESUCAR.toast("Placa inválida. Use o formato ABC1234 ou ABC1D23.", "error");
       const vseats = document.getElementById("e-vseats")?.value;
       if (vbrand !== undefined) fields.vehicle_brand = vbrand || undefined;
       if (vmodel !== undefined) fields.vehicle_model = vmodel || undefined;
@@ -443,3 +445,6 @@
   </script>
 </body>
 </html>
+
+
+

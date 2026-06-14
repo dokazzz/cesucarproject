@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR" data-theme="light">
 <head>
   <meta charset="UTF-8" />
@@ -106,7 +106,7 @@
     </div>
   </footer>
 
-  <script src="js/app.js"></script>
+  <script src="js/app.js?v=20260613d"></script>
   <script>
     CESUCAR.requireAuth();
     CESUCAR.setupNav("search");
@@ -196,7 +196,11 @@
     async function renderResults(rides) {
       const container = document.getElementById("resultsList");
       const myRequests = CESUCAR.isLoggedIn() ? await CESUCAR.getMyRequests() : [];
-      const reservedIds = myRequests.map(r => r.ride_id || r.rideId);
+      const myReqMap = {};
+      myRequests.forEach(req => {
+        const rid = req.ride_id || req.rideId;
+        if (rid) myReqMap[rid] = req;
+      });
 
       if (!rides.length) {
         container.innerHTML = `<div class="empty-state"><span class="empty-state-icon">⌕</span><div class="empty-state-title">Nenhuma carona encontrada</div><p>Ajuste os filtros ou <a href="oferecer-carona.html" class="ec-link">ofereça uma carona</a>.</p></div>`;
@@ -204,17 +208,23 @@
       }
 
       container.innerHTML = rides.map(r => {
-        const reserved = reservedIds.includes(r.id);
+        const myReq  = myReqMap[r.id];
+        const status = myReq?.status;
+        const isPending  = status === "PENDING";
+        const isApproved = status === "APPROVED";
+        const reserved   = isPending || isApproved;
         const seats  = r.vagasDisp ?? r.vagas_disp ?? r.available_seats ?? 0;
         const esgotado = seats <= 0 && !reserved;
         const valor = r.valor ?? r.price_per_passenger;
-        const actionHtml = reserved
-          ? `<span class="badge badge-green ride-reserved-badge">✓ Reservado</span>
-             <button class="btn btn-ghost btn-sm btn-cancel" onclick="cancelRes('${r.id}')">Cancelar</button>
-             ${r.driver_phone ? `<button class="btn btn-ghost btn-sm" onclick="contactDriver('${r.id}')">WhatsApp</button>` : ""}`
-          : esgotado
-            ? `<span class="badge badge-gray">Esgotado</span>`
-            : `<button class="btn btn-primary btn-sm" onclick="reservar('${r.id}')">Reservar vaga</button>`;
+        const actionHtml = isPending
+          ? `<span class="badge badge-orange">Aguardando</span>
+             <button class="btn btn-ghost btn-sm btn-cancel" onclick="cancelRes('${r.id}')">Cancelar</button>`
+          : isApproved
+            ? `<button class="btn btn-primary btn-sm" onclick="contactDriver('${r.id}')">Confirmar</button>
+               <button class="btn btn-ghost btn-sm btn-cancel" onclick="cancelRes('${r.id}')">Cancelar</button>`
+            : esgotado
+              ? `<span class="badge badge-gray">Esgotado</span>`
+              : `<button class="btn btn-primary btn-sm" onclick="reservar('${r.id}')">Reservar vaga</button>`;
         const vehicleInfo = r.driver_vehicle_brand
           ? `${r.driver_vehicle_brand} ${r.driver_vehicle_model || ""} ${r.driver_vehicle_color ? "· " + r.driver_vehicle_color : ""}`.trim()
           : (r.veiculo || r.vehicle || "");
@@ -243,7 +253,7 @@
             </div>
             <div class="driver-actions">
               <div class="driver-price">
-                <div class="price-big">R$${valor}</div>
+                <div class="price-big">R$${CESUCAR.fmt(valor)}</div>
                 <div class="price-sub">por pessoa</div>
               </div>
               <div class="driver-btns">${actionHtml}</div>
@@ -286,7 +296,7 @@
           Tipo: <strong>${ride.tipo === "ida" ? "Ida para o CESUCA" : "Volta do CESUCA"}</strong><br>
           ${ride.neighborhood ? `Bairro: <strong>${ride.neighborhood}</strong><br>` : ""}
           ${driverVehicle ? `Veículo: <strong>${driverVehicle}</strong><br>` : ""}
-          <br>Valor: <strong>R$${ride.valor ?? ride.price_per_passenger}</strong> por pessoa`,
+          <br>Valor: <strong>R$${CESUCAR.fmt(ride.valor ?? ride.price_per_passenger)}</strong> por pessoa`,
         confirmLabel: "Confirmar",
         onConfirm: async () => {
           const result = await CESUCAR.reserveRide(id, ride);
@@ -315,3 +325,6 @@
   </script>
 </body>
 </html>
+
+
+

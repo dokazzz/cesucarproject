@@ -16,19 +16,14 @@ class RideController:
     def __init__(self, db: Session) -> None:
         self.service = RideService(db)
 
-    def list_rides(
-        self,
-        trip_type: str | None,
-        departure_city: str | None,
-        ride_date: date | None,
-    ) -> list[dict]:
+    def list_rides(self, trip_type, departure_city, ride_date) -> list[dict]:
         return self.service.search_rides(
             trip_type=trip_type,
             departure_city=departure_city,
             ride_date=ride_date,
         )
 
-    def get_ride(self, ride_id) -> dict:   # ride_id is a UUID string
+    def get_ride(self, ride_id) -> dict:
         try:
             return self.service.get_ride(ride_id).to_dict()
         except RideError as exc:
@@ -60,6 +55,27 @@ class RideController:
     def cancel_request(self, ride_id, passenger_id) -> dict:
         try:
             return self.service.cancel_request(ride_id, passenger_id)
+        except RideError as exc:
+            raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
+
+    def approve_request(self, ride_id, request_id, driver_id) -> dict:
+        try:
+            return self.service.approve_request(ride_id, request_id, driver_id)
+        except RideError as exc:
+            raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
+
+    def reject_request(self, ride_id, request_id, driver_id) -> dict:
+        try:
+            return self.service.reject_request(ride_id, request_id, driver_id)
+        except RideError as exc:
+            raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
+
+    def driver_requests(self, driver_id) -> list[dict]:
+        return self.service.get_driver_requests(driver_id)
+
+    def cancel_ride(self, ride_id, driver_id) -> dict:
+        try:
+            return self.service.cancel_ride(ride_id, driver_id)
         except RideError as exc:
             raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
 

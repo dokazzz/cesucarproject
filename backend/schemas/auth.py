@@ -5,6 +5,7 @@ from pydantic import BaseModel, field_validator
 import re
 
 RGM_RE = re.compile(r"^\d{8}$")
+_PLATE_RE = re.compile(r'^[A-Z]{3}[0-9]{4}$|^[A-Z]{3}[0-9][A-Z][0-9]{2}$')
 
 
 class LoginRequest(BaseModel):
@@ -33,6 +34,7 @@ class RegisterRequest(BaseModel):
     vehicle_brand: str | None = None
     vehicle_color: str | None = None
     vehicle_seats: int | None = None
+    vehicle_plate: str | None = None
 
     @field_validator("rgm")
     @classmethod
@@ -40,6 +42,16 @@ class RegisterRequest(BaseModel):
         if not RGM_RE.match(v):
             raise ValueError("RGM deve conter exatamente 8 dígitos numéricos.")
         return v
+
+    @field_validator("vehicle_plate")
+    @classmethod
+    def plate_format_register(cls, v: str | None) -> str | None:
+        if not v:
+            return v
+        normalized = v.replace("-", "").upper()
+        if not _PLATE_RE.match(normalized):
+            raise ValueError("Placa inválida. Use o formato ABC1234 (antiga) ou ABC1D23 (Mercosul).")
+        return normalized
 
     @field_validator("password")
     @classmethod
@@ -80,6 +92,16 @@ class UserUpdateRequest(BaseModel):
     vehicle_color: str | None = None
     vehicle_seats: int | None = None
     vehicle_plate: str | None = None
+
+    @field_validator("vehicle_plate")
+    @classmethod
+    def plate_format_update(cls, v: str | None) -> str | None:
+        if not v:
+            return v
+        normalized = v.replace("-", "").upper()
+        if not _PLATE_RE.match(normalized):
+            raise ValueError("Placa inválida. Use o formato ABC1234 (antiga) ou ABC1D23 (Mercosul).")
+        return normalized
 
     @field_validator("role")
     @classmethod

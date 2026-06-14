@@ -10,12 +10,16 @@ API documentation available at:
 """
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
+
+# Build identity — Vercel injects VERCEL_GIT_COMMIT_SHA automatically
+_BUILD_ID = os.environ.get("VERCEL_GIT_COMMIT_SHA", "dev")[:12]
 
 from config import config
 from database.connection import SessionLocal, engine, get_db
@@ -73,6 +77,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Version header middleware ──────────────────────────────────────────────────
+
+@app.middleware("http")
+async def add_version_header(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-App-Version"] = _BUILD_ID
+    return response
+
+
 # ── Routers ────────────────────────────────────────────────────────────────────
 
 app.include_router(auth_router)
@@ -92,19 +105,16 @@ def public_stats(db: Session = Depends(get_db)) -> dict:
     }
 
 
+@app.get("/api/version", tags=["Health"])
+def api_version() -> dict:
+    """Returns the current build ID — used by the frontend to detect stale deploys."""
+    return {"build": _BUILD_ID}
+
 @app.get("/status", tags=["Health"])
 def health_check() -> dict:
     """Health-check endpoint — returns system status."""
-    return {"sistema": "CESUCAR", "status": "Online", "version": "2.0.0"}
+    return {"sistema": "CESUCAR", "status": "Online", "version": "2.0.0", "build": _BUILD_ID}
 
-
-@app.get("/", tags=["Health"])
-def root() -> dict:
-    return {
-        "message": "CESUCAR API está rodando.",
-        "docs": "/docs",
-        "status": "/status",
-    }
 
 
 # ── Global exception handler ──────────────────────────────────────────────────

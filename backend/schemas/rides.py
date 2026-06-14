@@ -1,7 +1,11 @@
 """Pydantic schemas for ride endpoints."""
 from __future__ import annotations
 
+import re
+
 from pydantic import BaseModel, field_validator
+
+_PLATE_RE = re.compile(r'^[A-Z]{3}[0-9]{4}$|^[A-Z]{3}[0-9][A-Z][0-9]{2}$')
 
 
 class RideCreateRequest(BaseModel):
@@ -14,6 +18,16 @@ class RideCreateRequest(BaseModel):
     valor: float
     veiculo: str | None = None
     placa: str | None = None
+
+    @field_validator("placa")
+    @classmethod
+    def placa_format(cls, v: str | None) -> str | None:
+        if not v:
+            return v
+        normalized = v.replace("-", "").upper()
+        if not _PLATE_RE.match(normalized):
+            raise ValueError("Placa inválida. Use o formato ABC1234 (antiga) ou ABC1D23 (Mercosul).")
+        return normalized
 
     @field_validator("tipo")
     @classmethod

@@ -9,13 +9,18 @@
   const _local = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
   const API_URL = _local
     ? "http://localhost:8000/api"
-    : "https://SEU-BACKEND.railway.app/api";
+    : "https://cesucar-app.vercel.app/api";
   const TOKEN_KEY = "cesucar:token";
   const USER_KEY = "cesucar:user";
   const THEME_KEY = "cesucar:theme";
 
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+
+  // ── Currency formatter ───────────────────────────────────────────────────────
+  function fmt(val) {
+    return parseFloat(val || 0).toFixed(2);
+  }
 
   // ── City / Neighborhood data ─────────────────────────────────────────────────
 
@@ -111,6 +116,33 @@
     return user?.perfil || user?.role || "passenger";
   }
 
+  // ── Version mismatch detection ───────────────────────────────────────────────
+
+  let _knownBuild = null;
+  let _staleNotified = false;
+
+  function _checkVersionHeader(response) {
+    const build = response.headers.get("X-App-Version");
+    if (!build || build === "dev") return;
+    if (!_knownBuild) { _knownBuild = build; return; }
+    if (build !== _knownBuild && !_staleNotified) {
+      _staleNotified = true;
+      const banner = document.createElement("div");
+      banner.style.cssText =
+        "position:fixed;bottom:80px;left:50%;transform:translateX(-50%);" +
+        "background:var(--surface);border:1px solid var(--glass-border);" +
+        "border-radius:var(--radius);padding:12px 18px;z-index:9999;" +
+        "box-shadow:var(--shadow-lg);display:flex;gap:12px;align-items:center;" +
+        "font-size:.88rem;max-width:calc(100vw - 32px);";
+      banner.innerHTML =
+        "<span>Nova versão disponível.</span>" +
+        "<button onclick=\"location.reload()\" style=\"background:var(--blue);color:#fff;" +
+        "border:none;border-radius:6px;padding:4px 12px;cursor:pointer;font-weight:700;" +
+        "font-size:.82rem;\">Recarregar</button>";
+      document.body.appendChild(banner);
+    }
+  }
+
   // ── Core API fetch ──────────────────────────────────────────────────────────
 
   async function apiFetch(path, options = {}) {
@@ -124,6 +156,7 @@
     let response;
     try {
       response = await fetch(API_URL + path, { ...options, headers });
+      _checkVersionHeader(response);
     } catch {
       throw {
         status: 0,
@@ -307,6 +340,46 @@
     }
   }
 
+  async function cancelRide(rideId) {
+    try {
+      await apiFetch(`/rides/${rideId}`, { method: "DELETE" });
+      toast("Carona cancelada.", "info");
+      return { ok: true };
+    } catch (err) {
+      toast(err.error || "Erro ao cancelar carona.", "error");
+      return { ok: false, error: err.error || "Erro ao cancelar carona." };
+    }
+  }
+
+  async function getDriverRequests() {
+    try {
+      const result = await apiFetch("/my-ride-requests");
+      return Array.isArray(result) ? result : [];
+    } catch { return []; }
+  }
+
+  async function approveRequest(rideId, requestId) {
+    try {
+      const result = await apiFetch(`/rides/${rideId}/requests/${requestId}/approve`, { method: "POST" });
+      toast("Carona confirmada!", "success");
+      return { ok: true, data: result };
+    } catch (err) {
+      toast(err.error || "Erro ao confirmar.", "error");
+      return { ok: false, error: err.error || "Erro ao confirmar." };
+    }
+  }
+
+  async function driverCancelRequest(rideId, requestId) {
+    try {
+      await apiFetch(`/rides/${rideId}/requests/${requestId}`, { method: "DELETE" });
+      toast("Solicitação cancelada.", "info");
+      return { ok: true };
+    } catch (err) {
+      toast(err.error || "Erro ao cancelar.", "error");
+      return { ok: false, error: err.error || "Erro ao cancelar." };
+    }
+  }
+
   // ── WhatsApp integration ─────────────────────────────────────────────────────
 
   function openWhatsApp(phone, ride, passenger) {
@@ -477,7 +550,7 @@
         const drawerLinks = links.map((l) => `<a href="${l.href}">${l.label}</a>`).join("");
         drawer.innerHTML = drawerLinks + `<div class="drawer-btns">
           <a href="login.html" class="btn btn-ghost">Entrar</a>
-          <a href="cadastro.html" class="btn btn-primary">Cadastrar</a>
+          <a href="cadastro.html" class="btn btn-blue">Cadastrar</a>
         </div>`;
       }
       setupMobileDrawer();
@@ -707,6 +780,7 @@
     tomorrow,
     CIDADES_BAIRROS,
     // Helpers
+    fmt,
     getNeighborhoods,
     populateNeighborhoodSelect,
     // Auth
@@ -726,6 +800,11 @@
     getMyRequests,
     reserveRide,
     cancelReservation,
+    cancelRide,
+    // Driver ride management
+    getDriverRequests,
+    approveRequest,
+    driverCancelRequest,
     // WhatsApp
     openWhatsApp,
     // Notifications

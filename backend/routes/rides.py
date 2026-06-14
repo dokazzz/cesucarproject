@@ -29,7 +29,7 @@ def list_rides(
 
 @router.get("/rides/{ride_id}", summary="Get a single ride offer")
 def get_ride(
-    ride_id: str,          # UUID path parameter — must be str, not int
+    ride_id: str,
     db: Session = Depends(get_db),
 ) -> dict:
     return RideController(db).get_ride(ride_id)
@@ -44,22 +44,57 @@ def create_ride(
     return RideController(db).create_ride(current_user.id, body)
 
 
-@router.post("/rides/{ride_id}/request", status_code=201, summary="Request a seat")
+@router.post("/rides/{ride_id}/request", status_code=201, summary="Request a seat (creates PENDING)")
 def request_seat(
-    ride_id: str,          # UUID path parameter
+    ride_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> dict:
     return RideController(db).request_seat(ride_id, current_user.id)
 
 
-@router.delete("/rides/{ride_id}/request", summary="Cancel a seat reservation")
+@router.delete("/rides/{ride_id}/request", summary="Passenger cancels their own reservation")
 def cancel_request(
-    ride_id: str,          # UUID path parameter
+    ride_id: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> dict:
     return RideController(db).cancel_request(ride_id, current_user.id)
+
+
+@router.post(
+    "/rides/{ride_id}/requests/{request_id}/approve",
+    summary="Driver confirms a PENDING request",
+)
+def approve_request(
+    ride_id: str,
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    return RideController(db).approve_request(ride_id, request_id, current_user.id)
+
+
+@router.delete(
+    "/rides/{ride_id}/requests/{request_id}",
+    summary="Driver cancels/rejects a request",
+)
+def reject_request(
+    ride_id: str,
+    request_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    return RideController(db).reject_request(ride_id, request_id, current_user.id)
+
+
+@router.delete("/rides/{ride_id}", summary="Driver cancels their own published ride")
+def cancel_ride(
+    ride_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> dict:
+    return RideController(db).cancel_ride(ride_id, current_user.id)
 
 
 @router.get("/my-rides", summary="Rides published by the authenticated driver")
@@ -70,12 +105,20 @@ def my_rides(
     return RideController(db).my_rides(current_user.id)
 
 
-@router.get("/my-requests", summary="Seat reservations made by the authenticated passenger")
+@router.get("/my-requests", summary="All seat reservations for the authenticated passenger")
 def my_requests(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> list:
     return RideController(db).my_requests(current_user.id)
+
+
+@router.get("/my-ride-requests", summary="PENDING requests for the authenticated driver's rides")
+def my_ride_requests(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list:
+    return RideController(db).driver_requests(current_user.id)
 
 
 @router.post("/rides/calculate-cost", summary="Calculate ride cost (no auth required)")

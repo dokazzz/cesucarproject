@@ -116,17 +116,41 @@ class RideRepository:
     # ── RideRequest queries ────────────────────────────────────────────────────
 
     def find_request(self, ride_id, passenger_id) -> RideRequest | None:
+        """Find an active (non-cancelled) request for duplicate check."""
         return self.db.execute(
             select(RideRequest).where(
                 and_(
                     RideRequest.ride_id == ride_id,
                     RideRequest.passenger_id == passenger_id,
-                    RideRequest.status != "CANCELLED",   # uppercase enum value
+                    RideRequest.status != "CANCELLED",
                 )
             )
         ).scalar_one_or_none()
 
+    def find_any_request(self, ride_id, passenger_id) -> RideRequest | None:
+        """Find any request including CANCELLED (for reactivation)."""
+        return self.db.execute(
+            select(RideRequest).where(
+                and_(
+                    RideRequest.ride_id == ride_id,
+                    RideRequest.passenger_id == passenger_id,
+                )
+            )
+        ).scalar_one_or_none()
+
+    def find_request_by_id(self, request_id) -> RideRequest | None:
+        """Find a request by its own ID, loading ride and passenger."""
+        return self.db.execute(
+            select(RideRequest)
+            .options(
+                joinedload(RideRequest.ride).joinedload(RideOffer.driver),
+                joinedload(RideRequest.passenger),
+            )
+            .where(RideRequest.id == request_id)
+        ).unique().scalar_one_or_none()
+
     def find_requests_by_passenger(self, passenger_id) -> list[RideRequest]:
+        """All requests by passenger — non-cancelled (active view)."""
         return list(
             self.db.execute(
                 select(RideRequest)
@@ -137,7 +161,41 @@ class RideRepository:
                 .where(
                     and_(
                         RideRequest.passenger_id == passenger_id,
-                        RideRequest.status != "CANCELLED",   # uppercase enum value
+                        RideRequest.status != "CANCELLED",
+                    )
+                )
+                .order_by(RideRequest.created_at.desc())
+            ).unique().scalars().all()
+        )
+
+    def find_all_requests_by_passenger(self, passenger_id) -> list[RideRequest]:
+        """All requests by passenger — all statuses including CANCELLED (for history)."""
+        return list(
+            self.db.execute(
+                select(RideRequest)
+                .options(
+                    joinedload(RideRequest.ride).joinedload(RideOffer.driver),
+                    joinedload(RideRequest.ride).joinedload(RideOffer.requests),
+                )
+                .where(RideRequest.passenger_id == passenger_id)
+                .order_by(RideRequest.created_at.desc())
+            ).unique().scalars().all()
+        )
+
+    def find_requests_by_driver(self, driver_id) -> list[RideRequest]:
+        """All PENDING requests for rides owned by this driver."""
+        return list(
+            self.db.execute(
+                select(RideRequest)
+                .join(RideOffer, RideRequest.ride_id == RideOffer.id)
+                .options(
+                    joinedload(RideRequest.ride),
+                    joinedload(RideRequest.passenger),
+                )
+                .where(
+                    and_(
+                        RideOffer.driver_id == driver_id,
+                        RideRequest.status == "PENDING",
                     )
                 )
                 .order_by(RideRequest.created_at.desc())
@@ -151,7 +209,7 @@ class RideRepository:
             .where(
                 and_(
                     RideRequest.ride_id == ride_id,
-                    RideRequest.status == "APPROVED",   # uppercase enum value
+                    RideRequest.status == "APPROVED",
                 )
             )
         ).scalar_one()
@@ -159,21 +217,63 @@ class RideRepository:
     # ── RideRequest mutations ─────────────────────────────────────────────────
 
     def create_request(self, ride_id, passenger_id) -> RideRequest:
-        # New seat requests are auto-approved (no driver review step currently).
+        """New seat requests start as PENDING. Reactivates a cancelled request if one exists (avoids unique violation)."""
+        existing = self.find_any_request(ride_id, passenger_id)
+        if existing:
+            existing.status = "PENDING"
+            self.db.flush()
+            self.db.refresh(existing)
+            return existing
         req = RideRequest(
             ride_id=ride_id,
             passenger_id=passenger_id,
-            status="APPROVED",   # uppercase enum value
+            status="PENDING",
         )
         self.db.add(req)
         self.db.flush()
         self.db.refresh(req)
         return req
 
+    def approve_request(self, request_id) -> RideRequest | None:
+        """Driver approves a PENDING request → APPROVED."""
+        req = self.find_request_by_id(request_id)
+        if not req:
+            return None
+        req.status = "APPROVED"
+        self.db.flush()
+        return req
+
+    def reject_by_driver(self, request_id) -> RideRequest | None:
+        """Driver rejects/cancels a request → CANCELLED."""
+        req = self.find_request_by_id(request_id)
+        if not req:
+            return None
+        req.status = "CANCELLED"
+        self.db.flush()
+        return req
+
     def cancel_request(self, ride_id, passenger_id) -> RideRequest | None:
+        """Passenger cancels their own request → CANCELLED."""
         req = self.find_request(ride_id, passenger_id)
         if not req:
             return None
-        req.status = "CANCELLED"   # uppercase enum value
+        req.status = "CANCELLED"
         self.db.flush()
         return req
+
+    def cancel_all_requests_for_ride(self, ride_id) -> int:
+        """Cancel every non-cancelled request for a ride. Returns count of cancelled."""
+        reqs = list(
+            self.db.execute(
+                select(RideRequest).where(
+                    and_(
+                        RideRequest.ride_id == ride_id,
+                        RideRequest.status != "CANCELLED",
+                    )
+                )
+            ).scalars().all()
+        )
+        for req in reqs:
+            req.status = "CANCELLED"
+        self.db.flush()
+        return len(reqs)

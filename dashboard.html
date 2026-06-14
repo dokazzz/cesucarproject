@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR" data-theme="light">
 <head>
   <meta charset="UTF-8" />
@@ -32,14 +32,6 @@
     <div id="notifList"></div>
   </div>
 
-  <div class="user-menu" id="userMenu">
-    <div class="user-menu-header">
-      <div class="user-menu-name" id="menuName">Usuário</div>
-      <div class="user-menu-rgm" id="userRgm">RGM: —</div>
-      <div id="userPerfilBadge" class="user-menu-perfil"></div>
-    </div>
-    <div id="userMenuLinks"></div>
-  </div>
 
   <div class="mobile-drawer" id="mobileDrawer"></div>
 
@@ -73,12 +65,6 @@
         <div class="kpi-label">Economia estimada</div>
         <div class="kpi-trend" id="kpiEconomiaTrend"></div>
       </article>
-      <article class="kpi">
-        <span class="kpi-icon">CO₂</span>
-        <div class="kpi-val" id="kpiCO2">—kg</div>
-        <div class="kpi-label">CO₂ evitado</div>
-        <div class="kpi-trend">Impacto positivo</div>
-      </article>
     </section>
 
     <section class="main-grid">
@@ -90,6 +76,11 @@
         <div class="reveal mt-28">
           <div class="section-title"><span class="dot"></span>Minhas reservas</div>
           <div id="myReservations"><div class="empty-state"><span class="empty-state-icon">▦</span><div class="empty-state-title">Carregando...</div></div></div>
+        </div>
+
+        <div class="reveal mt-28" id="driverRequestsSection" style="display:none">
+          <div class="section-title"><span class="dot"></span>Solicitações pendentes</div>
+          <div id="driverRequestsList"><div class="empty-state"><span class="empty-state-icon">▦</span><div class="empty-state-title">Carregando...</div></div></div>
         </div>
       </div>
 
@@ -118,7 +109,7 @@
     </div>
   </footer>
 
-  <script src="js/app.js"></script>
+  <script src="js/app.js?v=20260613d"></script>
   <script>
     CESUCAR.requireAuth();
     CESUCAR.setupNav("dashboard");
@@ -135,8 +126,7 @@
       const greet = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
 
       document.getElementById("greetName").textContent = firstName;
-      if (document.getElementById("menuName")) document.getElementById("menuName").textContent = firstName;
-      document.getElementById("userRgm").textContent = user.rgm ? "RGM: " + user.rgm : "";
+
       document.getElementById("greetSub").textContent =
         `${greet}. ${isDriver ? "Gerencie suas caronas e veja as solicitações." : isAdmin ? "Monitore a plataforma e gerencie usuários." : "Veja suas reservas, rotas disponíveis e notificações recentes."}`;
 
@@ -145,57 +135,23 @@
           ${isDriver ? "Motorista" : isAdmin ? "Admin" : "Passageiro"}
         </span>`;
 
-      document.getElementById("userPerfilBadge").innerHTML = `
-        <span class="perfil-badge ${isDriver ? "motorista" : isAdmin ? "admin" : "passageiro"}">
-          ${isDriver ? "Motorista" : isAdmin ? "Admin" : "Passageiro"}
-        </span>`;
     }
 
-    // Build role-based user-menu links
-    (function buildUserMenu() {
-      const links = [];
-      links.push(`<a href="dashboard.html">Dashboard</a>`);
-      if (role === "PASSENGER") {
-        links.push(`<a href="procurar-carona.html">Procurar carona</a>`);
-        links.push(`<a href="dashboard.html">Minhas reservas</a>`);
-      } else if (role === "DRIVER") {
-        links.push(`<a href="oferecer-carona.html">Oferecer carona</a>`);
-        links.push(`<a href="oferecer-carona.html#gerenciar">Minhas caronas</a>`);
-      } else if (role === "ADMIN") {
-        links.push(`<a href="procurar-carona.html">Caronas</a>`);
-        links.push(`<a href="admin.html">Painel Admin</a>`);
-      }
-      links.push(`<a href="#" data-logout>Sair</a>`);
-      const el = document.getElementById("userMenuLinks");
-      if (el) {
-        el.innerHTML = links.join("");
-        el.querySelectorAll("[data-logout]").forEach(btn => btn.addEventListener("click", CESUCAR.logout));
-      }
-    })();
-
-    // Bind notif panel and user-menu toggles (injected by setupNav)
+    // Bind notif panel toggle (injected by setupNav)
     document.getElementById("notifBtn")?.addEventListener("click", async (event) => {
       event.preventDefault();
       const panel = document.getElementById("notifPanel");
       const isOpening = !panel.classList.contains("open");
       panel.classList.toggle("open");
-      document.getElementById("userMenu").classList.remove("open");
       if (isOpening) {
         const notifs = await CESUCAR.getNotifications();
         renderNotifs(notifs);
       }
     });
 
-    document.getElementById("userChipBtn")?.addEventListener("click", () => {
-      document.getElementById("userMenu").classList.toggle("open");
-      document.getElementById("notifPanel").classList.remove("open");
-    });
-
     document.addEventListener("click", (e) => {
       if (!e.target.closest("#notifBtn") && !e.target.closest("#notifPanel"))
         document.getElementById("notifPanel").classList.remove("open");
-      if (!e.target.closest("#userChipBtn") && !e.target.closest("#userMenu"))
-        document.getElementById("userMenu").classList.remove("open");
     });
 
     function renderQuickActions() {
@@ -247,27 +203,62 @@
                 · ${ride.vagasDisp ?? ride.vagas_disp ?? ride.available_seats} vaga(s)
               </div>
             </div>
-            <div class="ride-price">R$${ride.valor ?? ride.price_per_passenger}</div>
+            <div class="ride-price">R$${CESUCAR.fmt(ride.valor ?? ride.price_per_passenger)}</div>
           </article>`;
       }).join("");
     }
 
     function renderMyReservations(reservations) {
       const container = document.getElementById("myReservations");
-      if (!reservations.length) {
+      const active = reservations.filter(r => r.status !== "CANCELLED");
+      if (!active.length) {
         container.innerHTML = `<div class="empty-state"><span class="empty-state-icon">▦</span><div class="empty-state-title">Nenhuma reserva ativa</div><p>Escolha uma carona disponível para começar.</p></div>`;
         return;
       }
-      container.innerHTML = reservations.map(req => {
+      container.innerHTML = active.map(req => {
         const ride = req.ride || {};
+        const isPending  = req.status === "PENDING";
+        const isApproved = req.status === "APPROVED";
+        const confirmarBtn = isApproved && ride.driver_phone
+          ? `<button class="btn btn-primary btn-sm" onclick="CESUCAR.openWhatsApp('${ride.driver_phone}', ${JSON.stringify(ride).replace(/"/g,"&quot;")}, CESUCAR.currentUser())">Confirmar</button>`
+          : isApproved
+            ? `<span class="badge badge-green">Confirmado</span>`
+            : `<span class="badge badge-orange">Aguardando</span>`;
         return `
           <article class="ride-card">
             <div class="ride-info">
               <div class="ride-route">${ride.origem || ride.departure_city || "Origem"} <span class="arrow">→</span> ${ride.destino || ride.destination || "Destino"}</div>
               <div class="ride-meta">${ride.horario || ""} · ${ride.driver || ""} ${tipoBadge(ride.tipo || "ida")}</div>
+              ${isPending ? `<div class="ride-meta" style="color:var(--text-muted);font-size:.75rem;">Aguardando confirmação do motorista</div>` : ""}
             </div>
-            <span class="badge badge-green">Confirmado</span>
-            <button class="btn btn-ghost btn-sm" onclick="cancelRes(${req.ride_id || req.rideId}, event)">Cancelar</button>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+              ${confirmarBtn}
+              <button class="btn btn-ghost btn-sm btn-cancel" onclick="cancelRes('${req.ride_id || req.rideId}', event)">Cancelar</button>
+            </div>
+          </article>`;
+      }).join("");
+    }
+
+    function renderDriverRequests(requests) {
+      const container = document.getElementById("driverRequestsList");
+      if (!container) return;
+      if (!requests.length) {
+        container.innerHTML = `<div class="empty-state"><span class="empty-state-icon">▦</span><div class="empty-state-title">Sem solicitações pendentes</div></div>`;
+        return;
+      }
+      container.innerHTML = requests.map(req => {
+        const ride = req.ride || {};
+        return `
+          <article class="ride-card">
+            <div class="avatar avatar-md">${(req.passenger_name || "?")[0]}</div>
+            <div class="ride-info">
+              <div class="ride-route"><strong>${req.passenger_name || "Passageiro"}</strong>${req.passenger_rgm ? ` · RGM ${req.passenger_rgm}` : ""}</div>
+              <div class="ride-meta">${ride.origem || ""} → ${ride.destino || ""} · ${ride.horario || ""} · ${ride.data || ""}</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+              <button class="btn btn-primary btn-sm" onclick="confirmarSolicitacao('${ride.id || req.ride_id}','${req.id}',${JSON.stringify(req).replace(/"/g,"&quot;")})">Confirmar</button>
+              <button class="btn btn-ghost btn-sm" onclick="recusarSolicitacao('${ride.id || req.ride_id}','${req.id}')">Recusar</button>
+            </div>
           </article>`;
       }).join("");
     }
@@ -284,14 +275,13 @@
     }
 
     function updateKPIs(reservations) {
-      const count = reservations.length;
-      const economy = reservations.reduce((sum, r) => sum + (r.ride?.price_per_passenger || r.ride?.valor || 0), 0) * 3;
-      const co2 = (count * 2.4).toFixed(1);
+      const active = reservations.filter(r => r.status !== "CANCELLED");
+      const count = active.length;
+      const economy = active.reduce((sum, r) => sum + (r.ride?.price_per_passenger || r.ride?.valor || 0), 0) * 3;
       document.getElementById("kpiReservas").textContent = count;
       document.getElementById("kpiReservasTrend").textContent = count ? `${count} ativa${count > 1 ? "s" : ""}` : "Nenhuma ativa";
-      document.getElementById("kpiEconomia").textContent = "R$" + economy;
+      document.getElementById("kpiEconomia").textContent = "R$" + CESUCAR.fmt(economy);
       document.getElementById("kpiEconomiaTrend").textContent = economy ? "Estimativa mensal" : "";
-      document.getElementById("kpiCO2").textContent = co2 + "kg";
     }
 
     let _dashRides = [];
@@ -312,7 +302,7 @@
           ${ride.neighborhood ? `Bairro: <strong>${ride.neighborhood}</strong><br>` : ""}
           ${vehicleInfo ? `Veículo: <strong>${vehicleInfo}</strong><br>` : ""}
           Tipo: ${ride.tipo === "ida" ? "Ida para o CESUCA" : "Volta do CESUCA"}<br><br>
-          Valor: <strong>R$${ride.valor ?? ride.price_per_passenger}</strong> por pessoa`,
+          Valor: <strong>R$${CESUCAR.fmt(ride.valor ?? ride.price_per_passenger)}</strong> por pessoa`,
         confirmLabel: "Reservar",
         onConfirm: async () => {
           const result = await CESUCAR.reserveRide(id, ride);
@@ -343,18 +333,66 @@
       CESUCAR.toast("Notificações marcadas como lidas.", "info");
     }
 
+    async function confirmarSolicitacao(rideId, requestId, reqData) {
+      const result = await CESUCAR.approveRequest(rideId, requestId);
+      if (result.ok) {
+        refresh();
+        const ride = result.data?.ride || reqData?.ride || {};
+        const passengerPhone = reqData?.passenger_phone;
+        if (passengerPhone) {
+          setTimeout(() => {
+            CESUCAR.modal({
+              icon: "💬",
+              title: "Contatar passageiro",
+              body: `Carona confirmada! Deseja avisar <strong>${reqData?.passenger_name || "o passageiro"}</strong> pelo WhatsApp?`,
+              confirmLabel: "Abrir WhatsApp",
+              onConfirm: () => {
+                const passenger = { full_name: reqData?.passenger_name, rgm: reqData?.passenger_rgm };
+                CESUCAR.openWhatsApp(passengerPhone, ride, passenger);
+              },
+            });
+          }, 400);
+        }
+      }
+    }
+
+    async function recusarSolicitacao(rideId, requestId) {
+      CESUCAR.modal({
+        icon: "!",
+        title: "Recusar solicitação",
+        body: "Tem certeza que deseja recusar esta solicitação de carona?",
+        confirmLabel: "Recusar",
+        onConfirm: async () => {
+          await CESUCAR.driverCancelRequest(rideId, requestId);
+          refresh();
+        }
+      });
+    }
+
     async function refresh() {
-      const [rides, reservations, notifs] = await Promise.all([
+      const fetchList = [
         CESUCAR.getRides({ data: CESUCAR.today }),
         CESUCAR.getMyRequests(),
         CESUCAR.getNotifications(),
-      ]);
+      ];
+      if (isDriver || isAdmin) fetchList.push(CESUCAR.getDriverRequests());
+
+      const results = await Promise.all(fetchList);
+      const [rides, reservations, notifs] = results;
+      const driverReqs = results[3] || [];
+
       _dashRides = rides;
       renderRides(rides);
       renderMyReservations(reservations);
       updateKPIs(reservations);
       renderNotifs(notifs);
       CESUCAR.updateNotifBadge();
+
+      if (isDriver || isAdmin) {
+        const section = document.getElementById("driverRequestsSection");
+        if (section) section.style.display = "";
+        renderDriverRequests(driverReqs);
+      }
     }
 
     renderQuickActions();
@@ -362,3 +400,6 @@
   </script>
 </body>
 </html>
+
+
+
