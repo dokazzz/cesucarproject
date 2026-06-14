@@ -39,6 +39,7 @@ class AuthController:
                 vehicle_brand=body.vehicle_brand,
                 vehicle_color=body.vehicle_color,
                 vehicle_seats=body.vehicle_seats,
+                vehicle_plate=body.vehicle_plate,
             )
             return {"token": token, "user": user.to_dict()}
         except AuthError as exc:

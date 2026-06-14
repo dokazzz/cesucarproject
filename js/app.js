@@ -300,9 +300,9 @@
         if (user) {
           setTimeout(() => {
             modal({
-              icon: "💬",
-              title: "Falar com o motorista",
-              body: `Reserva confirmada! Deseja entrar em contato com <strong>${rideData.driver || "o motorista"}</strong> pelo WhatsApp?`,
+              icon: "✅",
+              title: "Viagem reservada!",
+              body: `Você reservou essa viagem. Deseja entrar em contato com <strong>${rideData.driver || "o motorista"}</strong> pelo WhatsApp?`,
               confirmLabel: "Abrir WhatsApp",
               onConfirm: () => {
                 openWhatsApp(rideData.driver_phone, rideData, user);

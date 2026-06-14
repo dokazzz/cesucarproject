@@ -85,6 +85,7 @@ class UserRepository:
         vehicle_brand: str | None = None,
         vehicle_color: str | None = None,
         vehicle_seats: int | None = None,
+        vehicle_plate: str | None = None,
     ) -> User:
         user = User(
             full_name=full_name,
@@ -99,6 +100,7 @@ class UserRepository:
             vehicle_brand=vehicle_brand,
             vehicle_color=vehicle_color,
             vehicle_seats=vehicle_seats,
+            vehicle_plate=vehicle_plate,
         )
         self.db.add(user)
         self.db.flush()
@@ -112,7 +114,7 @@ class UserRepository:
         allowed = {
             "full_name", "role", "course", "city", "neighborhood", "phone",
             "password_hash", "is_active",
-            "vehicle_model", "vehicle_brand", "vehicle_color", "vehicle_seats",
+            "vehicle_model", "vehicle_brand", "vehicle_color", "vehicle_seats", "vehicle_plate",
         }
         for key, value in fields.items():
             if key in allowed:

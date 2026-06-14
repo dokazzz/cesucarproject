@@ -135,6 +135,7 @@ class AuthService:
         vehicle_brand: str | None = None,
         vehicle_color: str | None = None,
         vehicle_seats: int | None = None,
+        vehicle_plate: str | None = None,
     ) -> tuple[str, User]:
         """
         Register a new user.
@@ -171,6 +172,7 @@ class AuthService:
             vehicle_brand=vehicle_brand,
             vehicle_color=vehicle_color,
             vehicle_seats=vehicle_seats,
+            vehicle_plate=vehicle_plate,
         )
 
         self._audit.log(

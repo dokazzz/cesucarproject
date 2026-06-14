@@ -178,8 +178,8 @@ body > nav:not(.navbar) {
 /* Footer */
 .f-logo img {
   width: auto;
-  height: 100px;
-  max-width: 320px;
+  height: 130px;
+  max-width: 380px;
   object-fit: contain;
 }
 
@@ -642,6 +642,11 @@ textarea.form-input {
 .badge-gray {
   background: var(--glass);
   color: var(--text-muted);
+}
+
+.badge-red {
+  background: #fdecea;
+  color: #c0392b;
 }
 
 .empty-state {
@@ -2873,7 +2878,7 @@ body.user-logged-in #drawer {
   }
 
   .f-logo img {
-    height: 85px;
+    height: 110px;
   }
 }
 
@@ -2881,8 +2886,8 @@ body.user-logged-in #drawer {
 [data-theme="dark"] .navbar-logo img,
 [data-theme="dark"] .nav-logo img {
   content: url("../logo-alternativa.png");
-  height: 56px;
-  max-width: 200px;
+  height: 110px;
+  max-width: 360px;
 }
 
 [data-theme="dark"] .hero-brand-logo img {
@@ -2893,14 +2898,14 @@ body.user-logged-in #drawer {
 
 [data-theme="dark"] .f-logo img {
   content: url("../logo-alternativa.png");
-  height: 52px;
-  max-width: 180px;
+  height: 130px;
+  max-width: 380px;
 }
 
 @media (max-width: 680px) {
   [data-theme="dark"] .navbar-logo img,
   [data-theme="dark"] .nav-logo img {
-    height: 52px;
+    height: 90px;
   }
   [data-theme="dark"] .hero-brand-logo img {
     height: 80px;

@@ -293,7 +293,8 @@
     }
 
     async function renderMinhasCaronas() {
-      const rides = await CESUCAR.getMyRides();
+      const all = await CESUCAR.getMyRides();
+      const rides = all.filter(r => r.status !== "CANCELLED");
       const container = document.getElementById("minhasCaronas");
       if (!rides.length) {
         container.innerHTML = `<div class="empty-state"><span class="empty-state-icon">+</span><div class="empty-state-title">Nenhuma carona publicada</div><p>Publique sua primeira carona pelo formulário ao lado.</p></div>`;

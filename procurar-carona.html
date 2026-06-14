@@ -247,7 +247,7 @@
                 ${r.neighborhood ? `<span class="badge badge-gray">📍 ${r.neighborhood}</span>` : ""}
                 ${vehicleInfo ? `<span class="badge badge-blue">${vehicleInfo}</span>` : ""}
                 ${r.placa || r.license_plate ? `<span class="badge badge-placa">${r.placa || r.license_plate}</span>` : ""}
-                <span class="badge badge-gray">${seats}/${r.vagas || r.available_seats} vagas</span>
+                <span class="badge ${seats > 0 ? 'badge-gray' : 'badge-red'}">${seats > 0 ? `${seats} vaga${seats !== 1 ? 's' : ''} disponível` : 'Esgotado'}</span>
                 ${tipoBadge(r.tipo || "ida")}
               </div>
             </div>
