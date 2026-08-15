@@ -38,6 +38,12 @@ def get_current_user(
         )
     try:
         payload = AuthService.decode_token(credentials.credentials)
+        # Only access tokens authenticate a request. Refresh tokens are opaque
+        # random strings rather than JWTs so they cannot reach here anyway, but
+        # rejecting anything not explicitly typed as an access token keeps that
+        # true if another token kind is ever added.
+        if payload.get("typ", "access") != "access":
+            raise AuthError("Token inválido ou expirado.", 401)
         # sub is stored as a UUID string — do NOT cast to int
         user_id: str = payload["sub"]
     except (AuthError, KeyError):

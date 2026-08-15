@@ -8,9 +8,11 @@ from jose import jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
+from app_time import now_utc
 from config import config
 from database.models.user import User
 from database.repositories.audit_log_repository import AuditLogRepository
+from database.repositories.refresh_token_repository import RefreshTokenRepository
 from database.repositories.user_repository import UserRepository
 
 # bcrypt context — passlib handles salt generation automatically
@@ -40,6 +42,123 @@ class AuthService:
         self.db = db
         self._users = UserRepository(db)
         self._audit = AuditLogRepository(db)
+        self._refresh = RefreshTokenRepository(db)
+
+    # ── Session lifecycle ─────────────────────────────────────────────────────
+
+    def _issue_session(
+        self,
+        user: User,
+        *,
+        family_id=None,
+        user_agent: str | None = None,
+        client_ip: str | None = None,
+    ) -> dict:
+        """Mint an access/refresh pair. A new family_id starts a new session."""
+        refresh_token, row = self._refresh.issue(
+            user_id=user.id,
+            ttl_days=config.REFRESH_TOKEN_DAYS,
+            family_id=family_id,
+            user_agent=user_agent,
+            client_ip=client_ip,
+        )
+        access = self.create_access_token(user)
+        return {
+            "token":         access,   # legacy key name, kept for the web frontend
+            "access_token":  access,
+            "refresh_token": refresh_token,
+            "token_type":    "Bearer",
+            "expires_in":    config.ACCESS_TOKEN_MINUTES * 60,
+            "_family_id":    row.family_id,
+        }
+
+    def refresh_session(
+        self,
+        refresh_token: str,
+        *,
+        user_agent: str | None = None,
+        client_ip: str | None = None,
+    ) -> tuple[dict, User]:
+        """
+        Exchange a refresh token for a new pair, rotating it.
+
+        Raises AuthError on anything suspicious. The interesting case is reuse:
+        a correct client spends each token exactly once, so a second use means
+        the value was captured. The server cannot tell the thief from the
+        victim, so the entire family is revoked and both must log in again --
+        noisy on purpose, because the alternative is a stolen session that
+        renews itself forever.
+        """
+        row = self._refresh.find_by_token(refresh_token)
+        if row is None:
+            raise AuthError("Sessão inválida. Faça login novamente.", 401)
+
+        now = now_utc()
+
+        if row.used_at is not None or row.revoked_at is not None:
+            revoked = self._refresh.revoke_family(row.family_id)
+            self._audit.log(
+                action="USER_LOGOUT",
+                user_id=row.user_id,
+                details={"event": "refresh_token_reuse_detected",
+                         "family": str(row.family_id), "revoked": revoked},
+            )
+            self.db.commit()
+            raise AuthError(
+                "Sessão encerrada por motivo de segurança. Faça login novamente.", 401
+            )
+
+        if row.expires_at <= now:
+            raise AuthError("Sessão expirada. Faça login novamente.", 401)
+
+        user = self._users.find_by_id(row.user_id)
+        if user is None:
+            raise AuthError("Usuário não encontrado.", 401)
+
+        # Re-checked on every refresh, which is what makes deactivation take
+        # effect within one access-token lifetime instead of never.
+        if not user.is_active:
+            self._refresh.revoke_family(row.family_id)
+            self.db.commit()
+            raise AuthError(
+                "Esta conta está desativada. Procure a administração do CESUCA.", 403
+            )
+
+        self._refresh.mark_used(row, now)
+        session = self._issue_session(
+            user, family_id=row.family_id, user_agent=user_agent, client_ip=client_ip
+        )
+        self.db.commit()
+        return session, user
+
+    def logout(self, refresh_token: str | None) -> dict:
+        """Revoke the presented session. Silent when the token is unknown."""
+        if not refresh_token:
+            return {"message": "Sessão encerrada."}
+        row = self._refresh.find_by_token(refresh_token)
+        if row is None:
+            return {"message": "Sessão encerrada."}
+        revoked = self._refresh.revoke_family(row.family_id)
+        self._audit.log(
+            action="USER_LOGOUT",
+            user_id=row.user_id,
+            details={"family": str(row.family_id), "revoked": revoked},
+        )
+        self.db.commit()
+        return {"message": "Sessão encerrada."}
+
+    def list_sessions(self, user_id) -> list[dict]:
+        return [row.to_dict() for row in self._refresh.find_active_for_user(user_id)]
+
+    def revoke_all_sessions(self, user_id) -> dict:
+        count = self._refresh.revoke_all_for_user(user_id)
+        self._audit.log(
+            action="USER_LOGOUT",
+            user_id=user_id,
+            details={"event": "all_sessions_revoked", "revoked": count},
+        )
+        self.db.commit()
+        return {"message": "Todas as sessões foram encerradas.", "revoked": count}
 
     # ── Password helpers ───────────────────────────────────────────────────────
 
@@ -54,16 +173,25 @@ class AuthService:
     # ── JWT helpers ────────────────────────────────────────────────────────────
 
     @staticmethod
-    def create_token(user: User) -> str:
+    def create_access_token(user: User) -> str:
+        """
+        Short-lived bearer token. Stateless: verified by signature and expiry
+        alone, never looked up. Its lifetime is therefore also the maximum
+        delay before a disabled account or a changed role stops taking effect.
+        """
         now = datetime.now(timezone.utc)
         payload = {
-            "sub": str(user.id),
-            "rgm": user.rgm,
+            "sub":  str(user.id),
+            "rgm":  user.rgm,
             "role": user.role,
-            "iat": now,
-            "exp": now + timedelta(hours=config.JWT_EXPIRES_HOURS),
+            "typ":  "access",
+            "iat":  now,
+            "exp":  now + timedelta(minutes=config.ACCESS_TOKEN_MINUTES),
         }
         return jwt.encode(payload, config.JWT_SECRET_KEY, algorithm=config.JWT_ALGORITHM)
+
+    # Kept so nothing breaks on the old name.
+    create_token = create_access_token
 
     @staticmethod
     def decode_token(token: str) -> dict:
@@ -93,7 +221,14 @@ class AuthService:
 
     # ── Business operations ───────────────────────────────────────────────────
 
-    def login(self, rgm: str, password: str) -> tuple[str, User]:
+    def login(
+        self,
+        rgm: str,
+        password: str,
+        *,
+        user_agent: str | None = None,
+        client_ip: str | None = None,
+    ) -> tuple[dict, User]:
         """
         Authenticate a user by RGM and password.
 
@@ -126,14 +261,14 @@ class AuthService:
                 "Esta conta está desativada. Procure a administração do CESUCA.", 403
             )
 
-        token = self.create_token(user)
+        session = self._issue_session(user, user_agent=user_agent, client_ip=client_ip)
         self._audit.log(
             action="USER_LOGIN",          # matches AuditAction.USER_LOGIN
             user_id=user.id,
-            details={"rgm": rgm},
+            details={"rgm": rgm, "family": str(session.pop("_family_id"))},
         )
         self.db.commit()
-        return token, user
+        return session, user
 
     def register(
         self,
@@ -150,7 +285,9 @@ class AuthService:
         vehicle_color: str | None = None,
         vehicle_seats: int | None = None,
         vehicle_plate: str | None = None,
-    ) -> tuple[str, User]:
+        user_agent: str | None = None,
+        client_ip: str | None = None,
+    ) -> tuple[dict, User]:
         """
         Register a new user.
 
@@ -197,8 +334,10 @@ class AuthService:
         self.db.commit()
         self.db.refresh(user)
 
-        token = self.create_token(user)
-        return token, user
+        session = self._issue_session(user, user_agent=user_agent, client_ip=client_ip)
+        session.pop("_family_id", None)
+        self.db.commit()
+        return session, user
 
     def get_current_user(self, user_id) -> User:
         """Load user by ID or raise 401."""

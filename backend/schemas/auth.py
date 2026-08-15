@@ -80,6 +80,11 @@ class TokenResponse(BaseModel):
     user: dict
 
 
+class RefreshRequest(BaseModel):
+    """Body for /auth/refresh and /auth/logout."""
+    refresh_token: str
+
+
 class UserUpdateRequest(BaseModel):
     full_name: str | None = None
     role: str | None = None

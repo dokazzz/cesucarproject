@@ -11,6 +11,7 @@
     ? "http://localhost:8000/api"
     : "https://cesucar-app.vercel.app/api";
   const TOKEN_KEY = "cesucar:token";
+  const REFRESH_KEY = "cesucar:refresh";
   const USER_KEY = "cesucar:user";
   const THEME_KEY = "cesucar:theme";
 
@@ -112,9 +113,28 @@
 
   function getToken() { return localStorage.getItem(TOKEN_KEY); }
   function setToken(t) { localStorage.setItem(TOKEN_KEY, t); }
+  function getRefreshToken() { return localStorage.getItem(REFRESH_KEY); }
   function clearAuth() {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
     localStorage.removeItem(USER_KEY);
+  }
+
+  /**
+   * Store an access/refresh pair returned by login, register or refresh.
+   *
+   * The access token now lasts 15 minutes rather than 24 hours, so it expires
+   * during ordinary use and the refresh token is what keeps someone signed in.
+   * The server rotates the refresh token on every exchange, so the new one
+   * must replace the old: keeping a spent token and presenting it again is
+   * exactly the pattern the server treats as theft, and it will end the
+   * session for real.
+   */
+  function setSession(data) {
+    if (!data) return;
+    if (data.token || data.access_token) setToken(data.access_token || data.token);
+    if (data.refresh_token) localStorage.setItem(REFRESH_KEY, data.refresh_token);
+    if (data.user) cacheUser(data.user);
   }
   function cacheUser(user) { localStorage.setItem(USER_KEY, JSON.stringify(user)); }
 
@@ -162,6 +182,39 @@
     }
   }
 
+  // ── Session refresh ─────────────────────────────────────────────────────────
+
+  // One in-flight refresh at a time. A page that fires several requests at
+  // once would otherwise send several refreshes with the same token; the
+  // first rotates it and the rest look like reuse, which revokes the whole
+  // session. Everyone waits on the same promise instead.
+  let _refreshInFlight = null;
+
+  async function _refreshSession() {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) return false;
+    if (_refreshInFlight) return _refreshInFlight;
+
+    _refreshInFlight = (async () => {
+      try {
+        const res = await fetch(API_URL + "/auth/refresh", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+        if (!res.ok) return false;
+        setSession(await res.json());
+        return true;
+      } catch {
+        return false;
+      } finally {
+        _refreshInFlight = null;
+      }
+    })();
+
+    return _refreshInFlight;
+  }
+
   // ── Core API fetch ──────────────────────────────────────────────────────────
 
   async function apiFetch(path, options = {}) {
@@ -182,6 +235,14 @@
         error: "Falha na conexão com o servidor. Verifique se o backend está rodando em " +
           API_URL.replace("/api", ""),
       };
+    }
+
+    if (response.status === 401 && !options._retried && getRefreshToken()) {
+      // The access token probably just aged out. Exchange the refresh token
+      // and replay the original request once. Only once: a second 401 after a
+      // successful refresh is a real authorisation failure, not an expiry.
+      const renewed = await _refreshSession();
+      if (renewed) return apiFetch(path, { ...options, _retried: true });
     }
 
     if (response.status === 401) {
@@ -216,8 +277,7 @@
         body: JSON.stringify({ rgm, password }),
       });
       if (!data) return { ok: false, error: "Erro de autenticação." };
-      setToken(data.token);
-      cacheUser(data.user);
+      setSession(data);
       return { ok: true };
     } catch (err) {
       return { ok: false, error: err.error || "RGM ou senha inválidos." };
@@ -247,16 +307,27 @@
         }),
       });
       if (!data) return { ok: false, error: "Erro no cadastro." };
-      setToken(data.token);
-      cacheUser(data.user);
+      setSession(data);
       return { ok: true };
     } catch (err) {
       return { ok: false, error: err.error || "Erro ao criar conta." };
     }
   }
 
-  function logout(event) {
+  async function logout(event) {
     if (event) event.preventDefault();
+    // Tell the server to revoke the session. Clearing localStorage alone
+    // leaves a valid refresh token in existence for 30 days.
+    const refreshToken = getRefreshToken();
+    if (refreshToken) {
+      try {
+        await fetch(API_URL + "/auth/logout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
+      } catch { /* offline: local state is cleared regardless */ }
+    }
     clearAuth();
     toast("Você saiu da plataforma.", "info");
     setTimeout(() => { window.location.href = "login.html"; }, 500);
