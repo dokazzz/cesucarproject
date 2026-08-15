@@ -16,16 +16,17 @@ class RideController:
     def __init__(self, db: Session) -> None:
         self.service = RideService(db)
 
-    def list_rides(self, trip_type, departure_city, ride_date) -> list[dict]:
+    def list_rides(self, trip_type, departure_city, ride_date, viewer=None) -> list[dict]:
         return self.service.search_rides(
             trip_type=trip_type,
             departure_city=departure_city,
             ride_date=ride_date,
+            viewer=viewer,
         )
 
-    def get_ride(self, ride_id) -> dict:
+    def get_ride(self, ride_id, viewer=None) -> dict:
         try:
-            return self.service.get_ride(ride_id).to_dict()
+            return self.service.get_ride(ride_id).to_dict(viewer)
         except RideError as exc:
             raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
 

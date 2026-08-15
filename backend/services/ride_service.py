@@ -60,13 +60,14 @@ class RideService:
         trip_type: str | None = None,
         departure_city: str | None = None,
         ride_date: date | None = None,
+        viewer=None,
     ) -> list[dict]:
         rides = self._rides.find_all(
             trip_type=trip_type,
             departure_city=departure_city,
             ride_date=ride_date,
         )
-        return [r.to_dict() for r in rides]
+        return [r.to_dict(viewer) for r in rides]
 
     def get_ride(self, ride_id) -> RideOffer:
         ride = self._rides.find_by_id(ride_id)
@@ -75,7 +76,9 @@ class RideService:
         return ride
 
     def get_my_rides(self, driver_id) -> list[dict]:
-        return [r.to_dict() for r in self._rides.find_by_driver(driver_id)]
+        # The driver owns these rides, so they see their own contact details.
+        viewer = self._users.find_by_id(driver_id)
+        return [r.to_dict(viewer) for r in self._rides.find_by_driver(driver_id)]
 
     # ── Publish ───────────────────────────────────────────────────────────────
 
@@ -132,13 +135,14 @@ class RideService:
         )
         self.db.commit()
         self.db.refresh(ride)
-        return ride.to_dict()
+        return ride.to_dict(driver)
 
     # ── Seat request ──────────────────────────────────────────────────────────
 
     def request_seat(self, ride_id, passenger_id) -> dict:
         """Reserve a seat — creates a PENDING request awaiting driver approval."""
         ride = self.get_ride(ride_id)
+        passenger = self._users.find_by_id(passenger_id)
 
         if ride.status.value.upper() not in ("ACTIVE", "FULL"):
             raise RideError("Esta carona não está mais disponível.", 400)
@@ -156,7 +160,6 @@ class RideService:
         self._rides.create_request(ride_id, passenger_id)
 
         # Notify the driver
-        passenger = self._users.find_by_id(passenger_id)
         if passenger:
             self._notifs.create(
                 user_id=ride.driver_id,
@@ -173,7 +176,8 @@ class RideService:
             details={"ride_id": str(ride_id)},
         )
         self.db.commit()
-        return {"message": "Solicitação enviada. Aguarde a confirmação do motorista.", "ride": ride.to_dict()}
+        # PENDING only — the passenger does not get the driver's phone or plate yet.
+        return {"message": "Solicitação enviada. Aguarde a confirmação do motorista.", "ride": ride.to_dict(passenger)}
 
     # ── Driver approval ───────────────────────────────────────────────────────
 
@@ -218,8 +222,9 @@ class RideService:
         )
         self.db.commit()
 
-        result = approved.to_dict() if approved else {}
-        result["ride"] = ride.to_dict()
+        driver = self._users.find_by_id(driver_id)
+        result = approved.to_dict(driver) if approved else {}
+        result["ride"] = ride.to_dict(driver)
         return result
 
     def reject_request(self, ride_id, request_id, driver_id) -> dict:
@@ -264,7 +269,8 @@ class RideService:
 
     def get_driver_requests(self, driver_id) -> list[dict]:
         """Return all PENDING requests for the driver's rides."""
-        return [r.to_dict() for r in self._rides.find_requests_by_driver(driver_id)]
+        viewer = self._users.find_by_id(driver_id)
+        return [r.to_dict(viewer) for r in self._rides.find_requests_by_driver(driver_id)]
 
     # ── Passenger cancellation ────────────────────────────────────────────────
 
@@ -314,8 +320,14 @@ class RideService:
         return {"message": "Carona cancelada.", "requests_cancelled": cancelled_count}
 
     def get_my_requests(self, passenger_id) -> list[dict]:
-        """Return all seat reservations for a passenger (all statuses)."""
-        return [r.to_dict() for r in self._rides.find_all_requests_by_passenger(passenger_id)]
+        """
+        Return all seat reservations for a passenger (all statuses).
+
+        Each nested ride is serialized for this passenger, so driver contact
+        details appear only on the ones the driver actually approved.
+        """
+        viewer = self._users.find_by_id(passenger_id)
+        return [r.to_dict(viewer) for r in self._rides.find_all_requests_by_passenger(passenger_id)]
 
     # ── Cost calculation ─────────────────────────────────────────────────────
 

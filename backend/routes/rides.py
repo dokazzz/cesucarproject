@@ -22,17 +22,18 @@ def list_rides(
     departure_city: Optional[str] = None,
     date: Optional[date] = None,
     db: Session = Depends(get_db),
-    _: Optional[User] = Depends(get_optional_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ) -> list:
-    return RideController(db).list_rides(trip_type, departure_city, date)
+    return RideController(db).list_rides(trip_type, departure_city, date, viewer=current_user)
 
 
 @router.get("/rides/{ride_id}", summary="Get a single ride offer")
 def get_ride(
     ride_id: str,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
 ) -> dict:
-    return RideController(db).get_ride(ride_id)
+    return RideController(db).get_ride(ride_id, viewer=current_user)
 
 
 @router.post("/rides", status_code=201, summary="Publish a new ride offer (drivers only)")

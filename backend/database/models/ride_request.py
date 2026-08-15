@@ -68,7 +68,9 @@ class RideRequest(Base):
 
     # ── Serialization ─────────────────────────────────────────────────────────
 
-    def to_dict(self) -> dict:
+    def to_dict(self, viewer: "User | None" = None) -> dict:
+        # The nested ride is serialized for `viewer`, not unconditionally — a
+        # PENDING request must not hand out the driver's phone via this route.
         d: dict = {
             "id":           str(self.id),
             "ride_id":      str(self.ride_id),
@@ -77,7 +79,7 @@ class RideRequest(Base):
             "status":       self.status.value,
             "message":      self.message,
             "created_at":   self.created_at.isoformat() if self.created_at else None,
-            "ride":         self.ride.to_dict() if self.ride else None,
+            "ride":         self.ride.to_dict(viewer) if self.ride else None,
         }
         # Include passenger info when relationship is loaded (driver view)
         try:
