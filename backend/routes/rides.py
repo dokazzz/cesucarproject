@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
 from controllers.ride_controller import RideController
@@ -13,18 +13,35 @@ from database.models.user import User
 from middleware.auth import get_current_user, get_optional_user
 from schemas.rides import CostCalculationRequest, RideCreateRequest
 
-router = APIRouter(prefix="/api", tags=["Rides"])
+router = APIRouter(tags=["Rides"])
 
 
 @router.get("/rides", summary="List / search active ride offers")
 def list_rides(
+    request: Request,
     trip_type: Optional[str] = None,
     departure_city: Optional[str] = None,
     date: Optional[date] = None,
+    limit: int = Query(50, ge=1, le=100),
+    cursor: Optional[str] = None,
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_optional_user),
-) -> list:
-    return RideController(db).list_rides(trip_type, departure_city, date, viewer=current_user)
+):
+    """
+    Under /api/v1 this returns a page: {items, next_cursor, has_more}.
+
+    Under the deprecated unversioned /api it returns a bare list, which is
+    what the existing web frontend expects. This is the whole reason the
+    version is in the path -- the response shape could be improved for new
+    clients without breaking one already in the wild.
+    """
+    controller = RideController(db)
+    if request.url.path.startswith("/api/v1/"):
+        return controller.list_rides_page(
+            trip_type, departure_city, date,
+            viewer=current_user, limit=limit, cursor=cursor,
+        )
+    return controller.list_rides(trip_type, departure_city, date, viewer=current_user)
 
 
 @router.get("/rides/{ride_id}", summary="Get a single ride offer")

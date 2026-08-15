@@ -7,7 +7,7 @@ from database.connection import get_db
 from database.models.user import User
 from middleware.auth import get_current_user
 
-router = APIRouter(prefix="/api/notifications", tags=["Notifications"])
+router = APIRouter(prefix="/notifications", tags=["Notifications"])
 
 
 @router.get("", summary="List notifications for the authenticated user")

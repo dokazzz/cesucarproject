@@ -28,6 +28,7 @@ from database.connection import SessionLocal, engine, get_db
 from database.models import User, RideOffer, RideRequest, Notification, AuditLog  # noqa: F401 — needed for Alembic
 from database.repositories.ride_repository import RideRepository
 from database.repositories.user_repository import UserRepository
+from errors import ApiError, ErrorCode, api_error_handler
 from logging_config import setup_logging
 from rate_limit import client_ip, limiter
 from routes.auth import router as auth_router
@@ -95,6 +96,10 @@ app.add_middleware(
 
 app.state.limiter = limiter
 
+# Failures carry a stable `code` next to the human-readable `detail`, so a
+# client can branch on RIDE_FULL instead of matching Portuguese prose.
+app.add_exception_handler(ApiError, api_error_handler)
+
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
@@ -105,7 +110,8 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONRe
     )
     return JSONResponse(
         status_code=429,
-        content={"detail": "Muitas tentativas. Aguarde um momento e tente novamente."},
+        content={"detail": "Muitas tentativas. Aguarde um momento e tente novamente.",
+                 "code": ErrorCode.RATE_LIMITED},
         headers={"Retry-After": "60"},
     )
 
@@ -139,18 +145,66 @@ async def request_context(request: Request, call_next):
         except Exception:
             pass   # unauthenticated or malformed — routes decide what that means
 
+    # An app in someone's pocket cannot be patched, so the server needs a way
+    # to refuse builds that are too old to be safe. Only applies when the
+    # client identifies itself; the web frontend sends no such header.
+    client_version = request.headers.get("X-Client-Version")
+    if client_version and _older_than_minimum(client_version):
+        return JSONResponse(
+            status_code=426,
+            content={
+                "detail": "Esta versão do aplicativo não é mais suportada. Atualize para continuar.",
+                "code": ErrorCode.UPGRADE_REQUIRED,
+                "minimum_version": config.MIN_CLIENT_VERSION,
+            },
+        )
+
     response = await call_next(request)
     response.headers["X-App-Version"] = _BUILD_ID
     response.headers["X-Request-ID"] = request.state.request_id
+
+    # Tell unversioned callers, in a machine-readable way, that they are on a
+    # path with an end date. RFC 8594 / RFC 9745 headers.
+    path = request.url.path
+    if path.startswith(f"{API_LEGACY}/") and not path.startswith(f"{API_V1}/"):
+        response.headers["Deprecation"] = "true"
+        response.headers["Sunset"] = config.API_SUNSET_DATE
+        response.headers["Link"] = f'<{API_V1}>; rel="successor-version"'
+
     return response
+
+
+def _parse_version(value: str) -> tuple[int, ...]:
+    """'1.4.2' -> (1, 4, 2). Unparseable input sorts as 0.0.0."""
+    parts: list[int] = []
+    for chunk in str(value).split(".")[:3]:
+        digits = "".join(c for c in chunk if c.isdigit())
+        parts.append(int(digits) if digits else 0)
+    while len(parts) < 3:
+        parts.append(0)
+    return tuple(parts)
+
+
+def _older_than_minimum(client_version: str) -> bool:
+    return _parse_version(client_version) < _parse_version(config.MIN_CLIENT_VERSION)
 
 
 # ── Routers ────────────────────────────────────────────────────────────────────
 
-app.include_router(auth_router)
-app.include_router(rides_router)
-app.include_router(notifications_router)
-app.include_router(admin_router)
+API_V1 = "/api/v1"
+API_LEGACY = "/api"
+
+# Every router is mounted twice. /api/v1 is the contract a mobile client is
+# built against; bare /api is the same code kept alive for the existing web
+# frontend, hidden from the schema so /docs shows one API rather than two, and
+# answering with Deprecation and Sunset headers.
+#
+# The point of the version in the path is that an app already installed on
+# someone's phone cannot be patched. When v2 has to break something, v1 keeps
+# answering until the install base has moved.
+for _router in (auth_router, rides_router, notifications_router, admin_router):
+    app.include_router(_router, prefix=API_V1)
+    app.include_router(_router, prefix=API_LEGACY, include_in_schema=False)
 
 
 # ── Utility endpoints ──────────────────────────────────────────────────────────
@@ -215,6 +269,8 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
         status_code=500,
         content={
             "error": "Erro interno do servidor. Contate o administrador.",
+            "detail": "Erro interno do servidor. Contate o administrador.",
+            "code": ErrorCode.INTERNAL,
             "request_id": request_id,
         },
     )

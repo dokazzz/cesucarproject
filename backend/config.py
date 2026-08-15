@@ -82,10 +82,25 @@ class Config:
     DB_POOL_PRE_PING: bool = True
     DB_POOL_RECYCLE: int = 300
 
-    # ── JWT ────────────────────────────────────────────────────────
+    # ── Tokens ─────────────────────────────────────────────────────
     JWT_SECRET_KEY: str = _required_secret("JWT_SECRET_KEY", debug=DEBUG)
     JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRES_HOURS: int = int(_env("JWT_EXPIRES_HOURS", "24"))
+
+    # Access tokens are short-lived and stateless: there is no revocation
+    # list, so their lifetime IS the revocation delay. Fifteen minutes is
+    # the window in which a disabled account or a demoted role can still
+    # act. Refresh tokens are long-lived but revocable, stored hashed, and
+    # rotated on every use.
+    ACCESS_TOKEN_MINUTES: int = int(_env("ACCESS_TOKEN_MINUTES", "15"))
+    REFRESH_TOKEN_DAYS: int = int(_env("REFRESH_TOKEN_DAYS", "30"))
+
+    # ── API versioning ─────────────────────────────────────────────
+    # Unversioned /api/* paths stay mounted for the existing web frontend
+    # and answer with Deprecation/Sunset headers. Clients that send
+    # X-Client-Version below the minimum get 426 and are told to update --
+    # the only lever that exists over an app already on someone's phone.
+    API_SUNSET_DATE: str = _env("API_SUNSET_DATE", "2027-08-15")
+    MIN_CLIENT_VERSION: str = _env("MIN_CLIENT_VERSION", "0.0.0")
 
     # ── CORS ───────────────────────────────────────────────────────
     CORS_ORIGINS: list[str] = [
@@ -108,6 +123,9 @@ class Config:
     RATE_LIMIT_ENABLED: bool = _env("RATE_LIMIT_ENABLED", "true").lower() == "true"
     RATE_LIMIT_LOGIN: str = _env("RATE_LIMIT_LOGIN", "8/minute")
     RATE_LIMIT_REGISTER: str = _env("RATE_LIMIT_REGISTER", "12/hour")
+    # Refresh is called by legitimate clients every ~15 minutes, but a
+    # stolen token being probed looks the same, so it is capped too.
+    RATE_LIMIT_REFRESH: str = _env("RATE_LIMIT_REFRESH", "30/minute")
 
     # Only trust X-Forwarded-For when something we control actually sets it.
     # Behind a reverse proxy this must be true or every request shares one

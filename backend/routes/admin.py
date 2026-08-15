@@ -11,7 +11,7 @@ from database.connection import get_db
 from database.models.user import User
 from middleware.auth import require_role
 
-router = APIRouter(prefix="/api/admin", tags=["Admin"])
+router = APIRouter(prefix="/admin", tags=["Admin"])
 
 _admin_only = require_role("admin")
 

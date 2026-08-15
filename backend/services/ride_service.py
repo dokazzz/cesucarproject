@@ -1,10 +1,13 @@
 """RideService — ride offer and ride request business logic."""
 from __future__ import annotations
 
+import base64
+import uuid
 from datetime import date, datetime, timezone
 
 from sqlalchemy.orm import Session
 
+from app_time import parse_local, to_local
 from database.models.ride_offer import (
     RideOffer,
     TRIP_GOING,
@@ -20,10 +23,32 @@ from database.repositories.user_repository import UserRepository
 class RideError(Exception):
     """Raised for ride-related business rule violations."""
 
-    def __init__(self, message: str, status_code: int = 400) -> None:
+    def __init__(self, message: str, status_code: int = 400, code: str | None = None) -> None:
         super().__init__(message)
         self.message = message
         self.status_code = status_code
+        self.code = code
+
+
+# ── Keyset cursors ───────────────────────────────────────────────────────────
+# A cursor is just the sort key of the last row seen, encoded so callers treat
+# it as opaque and do not build their own. Base64 of "<iso8601>|<uuid>".
+
+def encode_cursor(ride) -> str:
+    raw = f"{ride.departure_time.isoformat()}|{ride.id}"
+    return base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii").rstrip("=")
+
+
+def decode_cursor(cursor: str | None):
+    if not cursor:
+        return None
+    try:
+        padded = cursor + "=" * (-len(cursor) % 4)
+        raw = base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8")
+        iso, _, ride_id = raw.partition("|")
+        return datetime.fromisoformat(iso), uuid.UUID(ride_id)
+    except Exception as exc:
+        raise RideError("Cursor de paginação inválido.", 400, "VALIDATION_FAILED") from exc
 
 
 class RideService:
@@ -46,9 +71,17 @@ class RideService:
 
     @staticmethod
     def _parse_departure_time(data: str, horario: str) -> datetime:
+        """
+        Interpret what the driver typed as local wall-clock time.
+
+        This used to stamp tzinfo=utc onto the naive value, storing a 07:00
+        ride as 07:00Z -- 04:00 in Porto Alegre. The website hid it by
+        formatting the same value straight back out; any client that renders
+        an ISO timestamp in the device's timezone showed every ride three
+        hours early.
+        """
         try:
-            dt = datetime.strptime(f"{data} {horario}", "%Y-%m-%d %H:%M")
-            return dt.replace(tzinfo=timezone.utc)
+            return parse_local(data, horario)
         except ValueError as exc:
             raise RideError(f"Data ou horário inválido: {exc}", 400) from exc
 
@@ -68,6 +101,39 @@ class RideService:
             ride_date=ride_date,
         )
         return [r.to_dict(viewer) for r in rides]
+
+    def search_rides_page(
+        self,
+        *,
+        trip_type: str | None = None,
+        departure_city: str | None = None,
+        ride_date: date | None = None,
+        viewer=None,
+        limit: int = 50,
+        cursor: str | None = None,
+    ) -> dict:
+        """
+        Paginated search, for clients that cannot swallow the whole table.
+
+        One extra row is fetched to decide whether a further page exists,
+        which avoids a second COUNT query on every scroll.
+        """
+        limit = max(1, min(limit, 100))
+        after = decode_cursor(cursor)
+        rides = self._rides.find_all(
+            trip_type=trip_type,
+            departure_city=departure_city,
+            ride_date=ride_date,
+            limit=limit + 1,
+            after=after,
+        )
+        has_more = len(rides) > limit
+        page = rides[:limit]
+        return {
+            "items": [r.to_dict(viewer) for r in page],
+            "next_cursor": encode_cursor(page[-1]) if (has_more and page) else None,
+            "has_more": has_more,
+        }
 
     def get_ride(self, ride_id) -> RideOffer:
         ride = self._rides.find_by_id(ride_id)
@@ -150,9 +216,19 @@ class RideService:
         if ride.driver_id == passenger_id:
             raise RideError("Você não pode reservar sua própria carona.", 400)
 
+        # Asking twice for the same seat is the same intent, not a new one.
+        # Mobile clients retry over flaky connections, and the old 409 turned
+        # a dropped response into a visible error for a request that had in
+        # fact succeeded. The (ride, passenger) pair is the idempotency key --
+        # the table already enforces it as unique.
         existing = self._rides.find_request(ride_id, passenger_id)
         if existing:
-            raise RideError("Você já tem uma solicitação ativa para esta carona.", 409)
+            return {
+                "message": "Solicitação já registrada. Aguarde a confirmação do motorista.",
+                "ride": ride.to_dict(passenger),
+                "request": existing.to_dict(passenger),
+                "idempotent": True,
+            }
 
         if ride.seats_available() <= 0:
             raise RideError("Esta carona está sem vagas disponíveis.", 400)
@@ -166,7 +242,7 @@ class RideService:
                 title="Nova solicitação de carona",
                 message=(
                     f"{passenger.full_name} solicitou uma vaga em sua carona "
-                    f"{ride.origem} → {ride.destino} às {ride.departure_time.strftime('%H:%M')}."
+                    f"{ride.origem} → {ride.destino} às {to_local(ride.departure_time).strftime('%H:%M')}."
                 ),
             )
 
@@ -211,7 +287,7 @@ class RideService:
                 title="Carona confirmada!",
                 message=(
                     f"Sua carona {ride.origem} → {ride.destino} "
-                    f"às {ride.departure_time.strftime('%H:%M')} foi confirmada pelo motorista!"
+                    f"às {to_local(ride.departure_time).strftime('%H:%M')} foi confirmada pelo motorista!"
                 ),
             )
 
@@ -255,7 +331,7 @@ class RideService:
                 title="Solicitação cancelada",
                 message=(
                     f"Sua solicitação para {ride.origem} → {ride.destino} "
-                    f"às {ride.departure_time.strftime('%H:%M')} foi cancelada pelo motorista."
+                    f"às {to_local(ride.departure_time).strftime('%H:%M')} foi cancelada pelo motorista."
                 ),
             )
 
