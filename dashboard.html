@@ -361,7 +361,9 @@
       if (result.ok) {
         refresh();
         const ride = result.data?.ride || reqData?.ride || {};
-        const passengerPhone = reqData?.passenger_phone;
+        // The phone arrives with the approval response, not with the pending
+        // request -- the API withholds contact details until approval.
+        const passengerPhone = result.data?.passenger_phone;
         if (passengerPhone) {
           setTimeout(() => {
             CESUCAR.modal({
@@ -370,7 +372,10 @@
               body: `Carona confirmada! Deseja avisar <strong>${CESUCAR.esc(reqData?.passenger_name || "o passageiro")}</strong> pelo WhatsApp?`,
               confirmLabel: "Abrir WhatsApp",
               onConfirm: () => {
-                const passenger = { full_name: reqData?.passenger_name, rgm: reqData?.passenger_rgm };
+                const passenger = {
+                  full_name: result.data?.passenger_name || reqData?.passenger_name,
+                  rgm:       result.data?.passenger_rgm,
+                };
                 CESUCAR.openWhatsApp(passengerPhone, ride, passenger);
               },
             });
