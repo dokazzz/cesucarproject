@@ -53,6 +53,18 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuário não encontrado.",
         )
+
+    # Tokens outlive an administrator's decision to disable an account, so the
+    # flag is checked on every request rather than only at login. Without this,
+    # "deactivate user" in the admin panel changed a column nobody read: the
+    # account kept working until its token expired, and kept working after that
+    # because it could still log in.
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Esta conta está desativada. Procure a administração do CESUCA.",
+        )
+
     return user
 
 

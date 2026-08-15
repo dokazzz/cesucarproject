@@ -112,6 +112,20 @@ class AuthService:
             # Uniform error to prevent user enumeration
             raise AuthError("RGM ou senha inválidos.", 401)
 
+        # Checked only after the password is verified, so this cannot be used
+        # to discover which RGMs exist -- reaching this line already requires
+        # the correct credentials.
+        if not user.is_active:
+            self._audit.log(
+                action="USER_LOGIN",
+                user_id=user.id,
+                details={"rgm": rgm, "rejected": "account_disabled"},
+            )
+            self.db.commit()
+            raise AuthError(
+                "Esta conta está desativada. Procure a administração do CESUCA.", 403
+            )
+
         token = self.create_token(user)
         self._audit.log(
             action="USER_LOGIN",          # matches AuditAction.USER_LOGIN
