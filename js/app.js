@@ -22,6 +22,25 @@
     return parseFloat(val || 0).toFixed(2);
   }
 
+  // ── HTML escaping ────────────────────────────────────────────────────────────
+  /**
+   * Escape a value for interpolation into an innerHTML template.
+   *
+   * Everything the API returns is some other user's input: a driver's name,
+   * a vehicle description, a neighbourhood, a ride note. Without this, a user
+   * who registers as `<img src=x onerror=...>` runs script in the browser of
+   * everyone who sees them in a list -- including an admin on the admin panel,
+   * where the JWT in localStorage is one fetch away.
+   *
+   * Use for text between tags AND for values inside quoted attributes; the
+   * quote characters are escaped for exactly that reason. Do NOT rely on it
+   * for a URL in href/src, or for anything placed inside a <script> block.
+   */
+  const _ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+  function esc(val) {
+    return String(val ?? "").replace(/[&<>"']/g, (ch) => _ESC[ch]);
+  }
+
   // ── City / Neighborhood data ─────────────────────────────────────────────────
 
   const CIDADES_BAIRROS = {
@@ -85,7 +104,7 @@
     }
     sel.innerHTML =
       '<option value="">Selecione o bairro</option>' +
-      bairros.map((b) => `<option${b === current ? " selected" : ""}>${b}</option>`).join("");
+      bairros.map((b) => `<option${b === current ? " selected" : ""}>${esc(b)}</option>`).join("");
     sel.closest("[data-bairro-wrap]")?.removeAttribute("hidden");
   }
 
@@ -302,7 +321,7 @@
             modal({
               icon: "✅",
               title: "Viagem reservada!",
-              body: `Você reservou essa viagem. Deseja entrar em contato com <strong>${rideData.driver || "o motorista"}</strong> pelo WhatsApp?`,
+              body: `Você reservou essa viagem. Deseja entrar em contato com <strong>${esc(rideData.driver || "o motorista")}</strong> pelo WhatsApp?`,
               confirmLabel: "Abrir WhatsApp",
               onConfirm: () => {
                 openWhatsApp(rideData.driver_phone, rideData, user);
@@ -507,14 +526,14 @@
         navAuthEl.innerHTML = `
           <a class="nav-notif-btn" id="notifBtn" href="dashboard.html" aria-label="Notificações">○<span class="notif-badge" id="notifBadge">0</span></a>
           <div class="nav-user-chip nav-user-dropdown-wrap" id="userChipBtn" tabindex="0" role="button" aria-haspopup="true" aria-expanded="false">
-            <div class="nav-user-avatar">${avatarText}</div>
-            <span>${displayName}</span>
+            <div class="nav-user-avatar">${esc(avatarText)}</div>
+            <span>${esc(displayName)}</span>
             <span class="perfil-badge ${roleClass}">${roleLabel}</span>
             <span class="nav-chip-caret">▾</span>
             <div class="nav-user-menu" role="menu">
               <div class="nav-user-menu-info">
-                <strong>${fullName}</strong>
-                <span>RGM ${user?.rgm || ""}</span>
+                <strong>${esc(fullName)}</strong>
+                <span>RGM ${esc(user?.rgm || "")}</span>
               </div>
               <div class="nav-user-menu-divider"></div>
               ${navMenuLinks}
@@ -781,6 +800,7 @@
     CIDADES_BAIRROS,
     // Helpers
     fmt,
+    esc,
     getNeighborhoods,
     populateNeighborhoodSelect,
     // Auth

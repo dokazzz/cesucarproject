@@ -207,6 +207,7 @@
         return;
       }
 
+      const esc = CESUCAR.esc;
       container.innerHTML = rides.map(r => {
         const myReq  = myReqMap[r.id];
         const status = myReq?.status;
@@ -229,24 +230,24 @@
           ? `${r.driver_vehicle_brand} ${r.driver_vehicle_model || ""} ${r.driver_vehicle_color ? "· " + r.driver_vehicle_color : ""}`.trim()
           : (r.veiculo || r.vehicle || "");
         return `
-          <article class="driver-card reveal" data-ride-id="${r.id}">
+          <article class="driver-card reveal" data-ride-id="${esc(r.id)}">
             <div class="driver-card-avatar">
-              <div class="avatar avatar-md">${r.driver_avatar || r.driverAvatar || "CE"}</div>
+              <div class="avatar avatar-md">${esc(r.driver_avatar || r.driverAvatar || "CE")}</div>
             </div>
             <div class="driver-details">
-              <div class="driver-name">${r.driver || "Motorista"}</div>
-              <div class="driver-curso">${r.course || r.curso || ""}</div>
+              <div class="driver-name">${esc(r.driver || "Motorista")}</div>
+              <div class="driver-curso">${esc(r.course || r.curso || "")}</div>
               <div class="driver-route">
-                <span class="route-city">${r.origem || r.departure_city}</span>
+                <span class="route-city">${esc(r.origem || r.departure_city)}</span>
                 <span class="route-arrow">→</span>
-                <span class="route-city">${r.destino || r.destination}</span>
-                <span class="route-time">· ${r.horario || ""}</span>
+                <span class="route-city">${esc(r.destino || r.destination)}</span>
+                <span class="route-time">· ${esc(r.horario || "")}</span>
               </div>
               <div class="driver-tags">
-                <span class="badge badge-gray">${r.data || ""}</span>
-                ${r.neighborhood ? `<span class="badge badge-gray">📍 ${r.neighborhood}</span>` : ""}
-                ${vehicleInfo ? `<span class="badge badge-blue">${vehicleInfo}</span>` : ""}
-                ${r.placa || r.license_plate ? `<span class="badge badge-placa">${r.placa || r.license_plate}</span>` : ""}
+                <span class="badge badge-gray">${esc(r.data || "")}</span>
+                ${r.neighborhood ? `<span class="badge badge-gray">📍 ${esc(r.neighborhood)}</span>` : ""}
+                ${vehicleInfo ? `<span class="badge badge-blue">${esc(vehicleInfo)}</span>` : ""}
+                ${r.placa || r.license_plate ? `<span class="badge badge-placa">${esc(r.placa || r.license_plate)}</span>` : ""}
                 <span class="badge ${seats > 0 ? 'badge-gray' : 'badge-red'}">${seats > 0 ? `${seats} vaga${seats !== 1 ? 's' : ''} disponível` : 'Esgotado'}</span>
                 ${tipoBadge(r.tipo || "ida")}
               </div>
@@ -291,11 +292,11 @@
         icon: "✓",
         title: "Confirmar reserva",
         body: `
-          <strong>${ride.driver || "Motorista"}</strong><br>
-          ${ride.origem} → ${ride.destino} às <strong>${ride.horario}</strong><br>
+          <strong>${CESUCAR.esc(ride.driver || "Motorista")}</strong><br>
+          ${CESUCAR.esc(ride.origem)} → ${CESUCAR.esc(ride.destino)} às <strong>${CESUCAR.esc(ride.horario)}</strong><br>
           Tipo: <strong>${ride.tipo === "ida" ? "Ida para o CESUCA" : "Volta do CESUCA"}</strong><br>
-          ${ride.neighborhood ? `Bairro: <strong>${ride.neighborhood}</strong><br>` : ""}
-          ${driverVehicle ? `Veículo: <strong>${driverVehicle}</strong><br>` : ""}
+          ${ride.neighborhood ? `Bairro: <strong>${CESUCAR.esc(ride.neighborhood)}</strong><br>` : ""}
+          ${driverVehicle ? `Veículo: <strong>${CESUCAR.esc(driverVehicle)}</strong><br>` : ""}
           <br>Valor: <strong>R$${CESUCAR.fmt(ride.valor ?? ride.price_per_passenger)}</strong> por pessoa`,
         confirmLabel: "Confirmar",
         onConfirm: async () => {

@@ -233,7 +233,7 @@
       if (tipo === "ida") {
         label.innerHTML = 'Cidade de origem <span class="req">*</span>';
         preview.innerHTML = `<div class="rota-preview-row">
-          <span class="rota-ponto cidade">${cidade || "Sua cidade"}</span>
+          <span class="rota-ponto cidade">${CESUCAR.esc(cidade || "Sua cidade")}</span>
           <span class="rota-seta">→</span>
           <span class="rota-ponto cesuca">CESUCA</span></div>`;
       } else {
@@ -241,7 +241,7 @@
         preview.innerHTML = `<div class="rota-preview-row">
           <span class="rota-ponto cesuca">CESUCA</span>
           <span class="rota-seta">→</span>
-          <span class="rota-ponto cidade">${cidade || "Sua cidade"}</span></div>`;
+          <span class="rota-ponto cidade">${CESUCAR.esc(cidade || "Sua cidade")}</span></div>`;
       }
     }
 
@@ -300,6 +300,7 @@
         container.innerHTML = `<div class="empty-state"><span class="empty-state-icon">+</span><div class="empty-state-title">Nenhuma carona publicada</div><p>Publique sua primeira carona pelo formulário ao lado.</p></div>`;
         return;
       }
+      const esc = CESUCAR.esc;
       container.innerHTML = rides.map(ride => {
         const isActive = ride.status === "ACTIVE" || ride.status === "FULL";
         const statusBadge = ride.status === "ACTIVE" ? "green"
@@ -311,15 +312,15 @@
         return `
         <article class="ride-card">
           <div class="ride-info">
-            <div class="ride-route">${ride.origem || ride.departure_city} <span class="arrow">→</span> ${ride.destino || ride.destination}</div>
-            <div class="ride-meta">${ride.data || ""} · ${ride.horario || ""}
+            <div class="ride-route">${esc(ride.origem || ride.departure_city)} <span class="arrow">→</span> ${esc(ride.destino || ride.destination)}</div>
+            <div class="ride-meta">${esc(ride.data || "")} · ${esc(ride.horario || "")}
               <span class="badge badge-${ride.tipo === "ida" ? "ida" : "volta"}" style="margin-left:6px;">
                 ${ride.tipo === "ida" ? "→ Ida" : "← Volta"}
               </span>
             </div>
             <div class="ride-meta">
-              ${ride.neighborhood ? `<span class="badge badge-gray">${ride.neighborhood}</span> · ` : ""}
-              ${ride.veiculo || ride.vehicle || ""} · ${ride.vagas || ride.available_seats} vagas · R$${CESUCAR.fmt(ride.valor ?? ride.price_per_passenger)}
+              ${ride.neighborhood ? `<span class="badge badge-gray">${esc(ride.neighborhood)}</span> · ` : ""}
+              ${esc(ride.veiculo || ride.vehicle || "")} · ${esc(ride.vagas || ride.available_seats)} vagas · R$${CESUCAR.fmt(ride.valor ?? ride.price_per_passenger)}
             </div>
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
