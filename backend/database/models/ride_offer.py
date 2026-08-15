@@ -13,6 +13,7 @@ from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app_time import to_local
 from database.connection import Base
 from database.models.enums import RideStatus, TripType
 
@@ -158,6 +159,9 @@ class RideOffer(Base):
         """
         tier = self.visibility_for(viewer)
         driver = self.driver
+        # departure_time is a UTC instant; the "data"/"horario" strings are
+        # what a student reads, so they are rendered in local time.
+        local = to_local(self.departure_time)
 
         # ── Public: the trip itself, nothing that identifies who is driving ──
         data = {
@@ -174,8 +178,8 @@ class RideOffer(Base):
             "tipo":                 self.tipo,
             "origem":               self.origem,
             "destino":              self.destino,
-            "data":                 self.departure_time.strftime("%d/%m/%Y") if self.departure_time else None,
-            "horario":              self.departure_time.strftime("%H:%M") if self.departure_time else None,
+            "data":                 local.strftime("%d/%m/%Y") if local else None,
+            "horario":              local.strftime("%H:%M") if local else None,
             "vagas":                self.available_seats,
             "vagasDisp":            self.seats_available(),
             "vagas_disp":           self.seats_available(),
