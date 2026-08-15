@@ -184,22 +184,23 @@
         container.innerHTML = `<div class="empty-state"><span class="empty-state-icon">⌕</span><div class="empty-state-title">Sem caronas hoje</div><p>Procure outros dias ou volte mais tarde.</p></div>`;
         return;
       }
+      const esc = CESUCAR.esc;
       container.innerHTML = rides.slice(0, 4).map(ride => {
         const vehicleInfo = ride.driver_vehicle_brand
           ? `${ride.driver_vehicle_brand} ${ride.driver_vehicle_model || ""}`.trim()
           : (ride.veiculo || ride.vehicle || "");
         return `
           <article class="ride-card" onclick="quickReserve('${ride.id}')" style="cursor:pointer">
-            <div class="avatar avatar-md">${ride.driver_avatar || ride.driverAvatar || "CE"}</div>
+            <div class="avatar avatar-md">${esc(ride.driver_avatar || ride.driverAvatar || "CE")}</div>
             <div class="ride-info">
-              <div class="ride-route">${ride.origem || ride.departure_city} <span class="arrow">→</span> ${ride.destino || ride.destination}</div>
+              <div class="ride-route">${esc(ride.origem || ride.departure_city)} <span class="arrow">→</span> ${esc(ride.destino || ride.destination)}</div>
               <div class="driver-mini">
-                <span class="ride-meta">${ride.driver || "Motorista"} · ${ride.horario || ""}</span>
+                <span class="ride-meta">${esc(ride.driver || "Motorista")} · ${esc(ride.horario || "")}</span>
                 ${tipoBadge(ride.tipo || "ida")}
               </div>
               <div class="ride-meta">
-                ${ride.neighborhood ? `<span class="badge badge-gray" style="font-size:.72rem;">📍 ${ride.neighborhood}</span> · ` : ""}
-                ${vehicleInfo}${ride.placa || ride.license_plate ? ` · <span class="badge badge-placa">${ride.placa || ride.license_plate}</span>` : ""}
+                ${ride.neighborhood ? `<span class="badge badge-gray" style="font-size:.72rem;">📍 ${esc(ride.neighborhood)}</span> · ` : ""}
+                ${esc(vehicleInfo)}${ride.placa || ride.license_plate ? ` · <span class="badge badge-placa">${esc(ride.placa || ride.license_plate)}</span>` : ""}
                 · ${ride.vagasDisp ?? ride.vagas_disp ?? ride.available_seats} vaga(s)
               </div>
             </div>
@@ -215,20 +216,23 @@
         container.innerHTML = `<div class="empty-state"><span class="empty-state-icon">▦</span><div class="empty-state-title">Nenhuma reserva ativa</div><p>Escolha uma carona disponível para começar.</p></div>`;
         return;
       }
+      const esc = CESUCAR.esc;
+      _resById = {};
       container.innerHTML = active.map(req => {
+        _resById[req.id] = req;   // looked up by id — never serialized into markup
         const ride = req.ride || {};
         const isPending  = req.status === "PENDING";
         const isApproved = req.status === "APPROVED";
         const confirmarBtn = isApproved && ride.driver_phone
-          ? `<button class="btn btn-primary btn-sm" onclick="CESUCAR.openWhatsApp('${ride.driver_phone}', ${JSON.stringify(ride).replace(/"/g,"&quot;")}, CESUCAR.currentUser())">Confirmar</button>`
+          ? `<button class="btn btn-primary btn-sm" onclick="contatarMotorista('${req.id}')">Confirmar</button>`
           : isApproved
             ? `<span class="badge badge-green">Confirmado</span>`
             : `<span class="badge badge-orange">Aguardando</span>`;
         return `
           <article class="ride-card">
             <div class="ride-info">
-              <div class="ride-route">${ride.origem || ride.departure_city || "Origem"} <span class="arrow">→</span> ${ride.destino || ride.destination || "Destino"}</div>
-              <div class="ride-meta">${ride.horario || ""} · ${ride.driver || ""} ${tipoBadge(ride.tipo || "ida")}</div>
+              <div class="ride-route">${esc(ride.origem || ride.departure_city || "Origem")} <span class="arrow">→</span> ${esc(ride.destino || ride.destination || "Destino")}</div>
+              <div class="ride-meta">${esc(ride.horario || "")} · ${esc(ride.driver || "")} ${tipoBadge(ride.tipo || "ida")}</div>
               ${isPending ? `<div class="ride-meta" style="color:var(--text-muted);font-size:.75rem;">Aguardando confirmação do motorista</div>` : ""}
             </div>
             <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
@@ -246,17 +250,20 @@
         container.innerHTML = `<div class="empty-state"><span class="empty-state-icon">▦</span><div class="empty-state-title">Sem solicitações pendentes</div></div>`;
         return;
       }
+      const esc = CESUCAR.esc;
+      _reqById = {};
       container.innerHTML = requests.map(req => {
+        _reqById[req.id] = req;   // looked up by id — never serialized into markup
         const ride = req.ride || {};
         return `
           <article class="ride-card">
-            <div class="avatar avatar-md">${(req.passenger_name || "?")[0]}</div>
+            <div class="avatar avatar-md">${esc((req.passenger_name || "?")[0])}</div>
             <div class="ride-info">
-              <div class="ride-route"><strong>${req.passenger_name || "Passageiro"}</strong>${req.passenger_rgm ? ` · RGM ${req.passenger_rgm}` : ""}</div>
-              <div class="ride-meta">${ride.origem || ""} → ${ride.destino || ""} · ${ride.horario || ""} · ${ride.data || ""}</div>
+              <div class="ride-route"><strong>${esc(req.passenger_name || "Passageiro")}</strong>${req.passenger_rgm ? ` · RGM ${esc(req.passenger_rgm)}` : ""}</div>
+              <div class="ride-meta">${esc(ride.origem || "")} → ${esc(ride.destino || "")} · ${esc(ride.horario || "")} · ${esc(ride.data || "")}</div>
             </div>
             <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
-              <button class="btn btn-primary btn-sm" onclick="confirmarSolicitacao('${ride.id || req.ride_id}','${req.id}',${JSON.stringify(req).replace(/"/g,"&quot;")})">Confirmar</button>
+              <button class="btn btn-primary btn-sm" onclick="confirmarSolicitacao('${ride.id || req.ride_id}','${req.id}')">Confirmar</button>
               <button class="btn btn-ghost btn-sm" onclick="recusarSolicitacao('${ride.id || req.ride_id}','${req.id}')">Recusar</button>
             </div>
           </article>`;
@@ -264,12 +271,13 @@
     }
 
     function renderNotifs(notifs) {
+      const esc = CESUCAR.esc;
       document.getElementById("notifList").innerHTML = notifs.map(n => `
         <div class="notif-item">
           <span class="notif-dot ${n.is_read || n.read_status || n.read ? "read" : ""}"></span>
           <div>
-            <div class="activity-text">${n.message || n.text}</div>
-            <div class="activity-time">${n.time || ""}</div>
+            <div class="activity-text">${esc(n.message || n.text)}</div>
+            <div class="activity-time">${esc(n.time || "")}</div>
           </div>
         </div>`).join("") || `<p class="ec-desc">Sem notificações.</p>`;
     }
@@ -282,6 +290,17 @@
       document.getElementById("kpiReservasTrend").textContent = count ? `${count} ativa${count > 1 ? "s" : ""}` : "Nenhuma ativa";
       document.getElementById("kpiEconomia").textContent = "R$" + CESUCAR.fmt(economy);
       document.getElementById("kpiEconomiaTrend").textContent = economy ? "Estimativa mensal" : "";
+    }
+
+    // Rendered rows, keyed by id. Inline handlers pass only the id and look the
+    // object up here, so no API-supplied string is ever parsed as code.
+    let _reqById = {};
+    let _resById = {};
+
+    function contatarMotorista(requestId) {
+      const req = _resById[requestId];
+      if (!req?.ride?.driver_phone) return;
+      CESUCAR.openWhatsApp(req.ride.driver_phone, req.ride, CESUCAR.currentUser());
     }
 
     let _dashRides = [];
@@ -297,10 +316,10 @@
         icon: "✓",
         title: "Reservar carona",
         body: `
-          <strong>${ride.driver || "Motorista"}</strong><br>
-          ${ride.origem} → ${ride.destino} às ${ride.horario}<br>
-          ${ride.neighborhood ? `Bairro: <strong>${ride.neighborhood}</strong><br>` : ""}
-          ${vehicleInfo ? `Veículo: <strong>${vehicleInfo}</strong><br>` : ""}
+          <strong>${CESUCAR.esc(ride.driver || "Motorista")}</strong><br>
+          ${CESUCAR.esc(ride.origem)} → ${CESUCAR.esc(ride.destino)} às ${CESUCAR.esc(ride.horario)}<br>
+          ${ride.neighborhood ? `Bairro: <strong>${CESUCAR.esc(ride.neighborhood)}</strong><br>` : ""}
+          ${vehicleInfo ? `Veículo: <strong>${CESUCAR.esc(vehicleInfo)}</strong><br>` : ""}
           Tipo: ${ride.tipo === "ida" ? "Ida para o CESUCA" : "Volta do CESUCA"}<br><br>
           Valor: <strong>R$${CESUCAR.fmt(ride.valor ?? ride.price_per_passenger)}</strong> por pessoa`,
         confirmLabel: "Reservar",
@@ -333,21 +352,30 @@
       CESUCAR.toast("Notificações marcadas como lidas.", "info");
     }
 
-    async function confirmarSolicitacao(rideId, requestId, reqData) {
+    async function confirmarSolicitacao(rideId, requestId) {
+      // reqData is looked up rather than passed through the DOM: it used to be
+      // JSON.stringify'd into the onclick attribute, so a passenger name
+      // containing a quote broke out of the handler and ran as script.
+      const reqData = _reqById[requestId];
       const result = await CESUCAR.approveRequest(rideId, requestId);
       if (result.ok) {
         refresh();
         const ride = result.data?.ride || reqData?.ride || {};
-        const passengerPhone = reqData?.passenger_phone;
+        // The phone arrives with the approval response, not with the pending
+        // request -- the API withholds contact details until approval.
+        const passengerPhone = result.data?.passenger_phone;
         if (passengerPhone) {
           setTimeout(() => {
             CESUCAR.modal({
               icon: "💬",
               title: "Contatar passageiro",
-              body: `Carona confirmada! Deseja avisar <strong>${reqData?.passenger_name || "o passageiro"}</strong> pelo WhatsApp?`,
+              body: `Carona confirmada! Deseja avisar <strong>${CESUCAR.esc(reqData?.passenger_name || "o passageiro")}</strong> pelo WhatsApp?`,
               confirmLabel: "Abrir WhatsApp",
               onConfirm: () => {
-                const passenger = { full_name: reqData?.passenger_name, rgm: reqData?.passenger_rgm };
+                const passenger = {
+                  full_name: result.data?.passenger_name || reqData?.passenger_name,
+                  rgm:       result.data?.passenger_rgm,
+                };
                 CESUCAR.openWhatsApp(passengerPhone, ride, passenger);
               },
             });

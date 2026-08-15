@@ -441,7 +441,7 @@
         PASSENGER: ["badge-green",  "Passageiro"],
       };
       const [cls, label] = map[role] || ["badge-gray", role];
-      return `<span class="badge ${cls}">${label}</span>`;
+      return `<span class="badge ${cls}">${CESUCAR.esc(label)}</span>`;
     }
 
     function statusHtml(isActive) {
@@ -505,32 +505,36 @@
         tbody.innerHTML = `<tr><td colspan="7" class="table-empty">Nenhum usuário encontrado.</td></tr>`;
         return;
       }
+      const esc = CESUCAR.esc;
       tbody.innerHTML = users.map(u => {
         const name = u.full_name || u.name || "—";
         const isAdmin = u.role === "ADMIN";
+        // Handlers take the user id only. The display name used to be spliced
+        // into these onclick strings, where a quote in a registered name broke
+        // out of the handler -- on the one page an admin session is open on.
         return `
           <tr>
             <td>
               <div class="table-user">
-                <div class="avatar avatar-sm">${u.avatar || name[0]}</div>
-                <span>${name}</span>
+                <div class="avatar avatar-sm">${esc(u.avatar || name[0])}</div>
+                <span>${esc(name)}</span>
               </div>
             </td>
-            <td class="mono">${u.rgm || "—"}</td>
+            <td class="mono">${esc(u.rgm || "—")}</td>
             <td>${roleBadge(u.role)}</td>
             <td style="font-size:.83rem;">${statusHtml(u.is_active !== false)}</td>
-            <td>${u.city || "—"}</td>
-            <td style="font-size:.82rem;">${fmtDate(u.created_at)}</td>
+            <td>${esc(u.city || "—")}</td>
+            <td style="font-size:.82rem;">${esc(fmtDate(u.created_at))}</td>
             <td>
               <div class="table-actions">
                 <button class="btn btn-ghost btn-xs" onclick="openUserDetail('${u.id}')">Ver</button>
                 ${!isAdmin ? `
-                  <button class="btn btn-ghost btn-xs" onclick="openRoleModal('${u.id}','${name.replace(/'/g,"")}','${u.role}')">Perfil</button>
-                  <button class="btn btn-ghost btn-xs" onclick="openPwdModal('${u.id}','${name.replace(/'/g,"")}')">Senha</button>
-                  <button class="btn btn-ghost btn-xs" onclick="toggleActive('${u.id}','${name.replace(/'/g,"")}',${!!u.is_active})">
+                  <button class="btn btn-ghost btn-xs" onclick="openRoleModal('${u.id}')">Perfil</button>
+                  <button class="btn btn-ghost btn-xs" onclick="openPwdModal('${u.id}')">Senha</button>
+                  <button class="btn btn-ghost btn-xs" onclick="toggleActive('${u.id}')">
                     ${u.is_active !== false ? "Desativar" : "Ativar"}
                   </button>
-                  <button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}','${name.replace(/'/g,"")}')">Excluir</button>
+                  <button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}')">Excluir</button>
                 ` : `<span class="badge badge-orange">Admin</span>`}
               </div>
             </td>
@@ -543,7 +547,7 @@
       const res = await CESUCAR.apiFetch("/admin/users");
       if (res && res.error) {
         document.getElementById("usersTbody").innerHTML =
-          `<tr><td colspan="7" class="table-empty">Erro: ${res.error}</td></tr>`;
+          `<tr><td colspan="7" class="table-empty">Erro: ${CESUCAR.esc(res.error)}</td></tr>`;
         return;
       }
       allUsers = Array.isArray(res) ? res : (res.users || []);
@@ -572,8 +576,8 @@
           <div class="activity-feed-item">
             <div class="af-dot"></div>
             <div>
-              <div class="af-action">${actionLabel(l.action)}</div>
-              <div class="af-meta">${fmtDateTime(l.created_at)}${l.details ? " · " + JSON.stringify(l.details).slice(0,60) : ""}</div>
+              <div class="af-action">${CESUCAR.esc(actionLabel(l.action))}</div>
+              <div class="af-meta">${CESUCAR.esc(fmtDateTime(l.created_at))}${l.details ? " · " + CESUCAR.esc(JSON.stringify(l.details).slice(0,60)) : ""}</div>
             </div>
           </div>`).join("");
       }
@@ -586,10 +590,10 @@
           const name = u.full_name || u.name || "Usuário";
           return `
             <div class="recent-user-card">
-              <div class="avatar avatar-sm">${u.avatar || name[0]}</div>
+              <div class="avatar avatar-sm">${CESUCAR.esc(u.avatar || name[0])}</div>
               <div>
-                <div style="font-size:.87rem;font-weight:600;">${name}</div>
-                <div style="font-size:.75rem;color:var(--text-muted,#64748b);">${roleBadge(u.role)} · RGM ${u.rgm}</div>
+                <div style="font-size:.87rem;font-weight:600;">${CESUCAR.esc(name)}</div>
+                <div style="font-size:.75rem;color:var(--text-muted,#64748b);">${roleBadge(u.role)} · RGM ${CESUCAR.esc(u.rgm)}</div>
               </div>
             </div>`;
         }).join("");
@@ -608,10 +612,10 @@
       }
       tbody.innerHTML = logs.map(l => `
         <tr>
-          <td class="mono" style="font-size:.8rem;">${fmtDateTime(l.created_at)}</td>
-          <td>${roleBadge(l.action) ? "" : ""}<span class="badge badge-gray">${actionLabel(l.action)}</span></td>
+          <td class="mono" style="font-size:.8rem;">${CESUCAR.esc(fmtDateTime(l.created_at))}</td>
+          <td><span class="badge badge-gray">${CESUCAR.esc(actionLabel(l.action))}</span></td>
           <td style="font-size:.8rem;color:var(--text-muted,#64748b);">
-            ${l.details ? JSON.stringify(l.details).slice(0,120) : "—"}
+            ${l.details ? CESUCAR.esc(JSON.stringify(l.details).slice(0,120)) : "—"}
           </td>
         </tr>`).join("");
     }
@@ -629,22 +633,23 @@
       document.getElementById("udRgm").textContent    = "RGM: " + (u.rgm || "—");
       document.getElementById("udBadge").innerHTML    = roleBadge(u.role) + " " + statusHtml(u.is_active !== false);
 
+      const esc = CESUCAR.esc;
       const body = document.getElementById("udBody");
       body.innerHTML = `
         <div class="ud-section-title">Informações pessoais</div>
-        <div class="ud-field"><label>Telefone</label><p>${u.phone || "—"}</p></div>
-        <div class="ud-field"><label>Curso</label><p>${u.course || "—"}</p></div>
-        <div class="ud-field"><label>Cidade</label><p>${u.city || "—"}</p></div>
-        <div class="ud-field"><label>Bairro</label><p>${u.neighborhood || "—"}</p></div>
-        <div class="ud-field"><label>Cadastro</label><p>${fmtDate(u.created_at)}</p></div>
+        <div class="ud-field"><label>Telefone</label><p>${esc(u.phone || "—")}</p></div>
+        <div class="ud-field"><label>Curso</label><p>${esc(u.course || "—")}</p></div>
+        <div class="ud-field"><label>Cidade</label><p>${esc(u.city || "—")}</p></div>
+        <div class="ud-field"><label>Bairro</label><p>${esc(u.neighborhood || "—")}</p></div>
+        <div class="ud-field"><label>Cadastro</label><p>${esc(fmtDate(u.created_at))}</p></div>
         <div class="ud-field"><label>Status</label><p>${u.is_active !== false ? "Ativo" : "Desativado"}</p></div>
         ${isDriver ? `
         <div class="ud-section-title">Veículo</div>
-        <div class="ud-field"><label>Modelo</label><p>${u.vehicle_model || "—"}</p></div>
-        <div class="ud-field"><label>Marca</label><p>${u.vehicle_brand || "—"}</p></div>
-        <div class="ud-field"><label>Cor</label><p>${u.vehicle_color || "—"}</p></div>
-        <div class="ud-field"><label>Capacidade</label><p>${u.vehicle_seats ? u.vehicle_seats + " lugares" : "—"}</p></div>
-        <div class="ud-field"><label>Placa</label><p>${u.vehicle_plate || "—"}</p></div>
+        <div class="ud-field"><label>Modelo</label><p>${esc(u.vehicle_model || "—")}</p></div>
+        <div class="ud-field"><label>Marca</label><p>${esc(u.vehicle_brand || "—")}</p></div>
+        <div class="ud-field"><label>Cor</label><p>${esc(u.vehicle_color || "—")}</p></div>
+        <div class="ud-field"><label>Capacidade</label><p>${u.vehicle_seats ? esc(u.vehicle_seats) + " lugares" : "—"}</p></div>
+        <div class="ud-field"><label>Placa</label><p>${esc(u.vehicle_plate || "—")}</p></div>
         ` : ""}`;
 
       const footer = document.getElementById("udFooter");
@@ -652,22 +657,32 @@
       footer.innerHTML = `
         <button class="btn btn-ghost btn-sm" onclick="closeModal('userDetailModal')">Fechar</button>
         ${!isAdminUser ? `
-          <button class="btn btn-ghost btn-sm" onclick="closeModal('userDetailModal');openRoleModal('${u.id}','${name.replace(/'/g,"")}','${u.role}')">Alterar perfil</button>
-          <button class="btn btn-ghost btn-sm" onclick="closeModal('userDetailModal');openPwdModal('${u.id}','${name.replace(/'/g,"")}')">Redefinir senha</button>
-          <button class="btn btn-ghost btn-sm" onclick="closeModal('userDetailModal');toggleActive('${u.id}','${name.replace(/'/g,"")}',${!!u.is_active})">
+          <button class="btn btn-ghost btn-sm" onclick="closeModal('userDetailModal');openRoleModal('${u.id}')">Alterar perfil</button>
+          <button class="btn btn-ghost btn-sm" onclick="closeModal('userDetailModal');openPwdModal('${u.id}')">Redefinir senha</button>
+          <button class="btn btn-ghost btn-sm" onclick="closeModal('userDetailModal');toggleActive('${u.id}')">
             ${u.is_active !== false ? "Desativar conta" : "Ativar conta"}
           </button>
-          <button class="btn btn-danger btn-sm" onclick="closeModal('userDetailModal');deleteUser('${u.id}','${name.replace(/'/g,"")}')">Excluir</button>
+          <button class="btn btn-danger btn-sm" onclick="closeModal('userDetailModal');deleteUser('${u.id}')">Excluir</button>
         ` : ""}`;
 
       document.getElementById("userDetailModal").hidden = false;
     }
 
     // ── Role modal ────────────────────────────────────────────────────────────
-    function openRoleModal(userId, name, currentRole) {
+    // Resolve a row's user from the loaded list rather than from markup.
+    function _userById(userId) {
+      return allUsers.find(u => String(u.id) === String(userId)) || {};
+    }
+    function _nameOf(userId) {
+      const u = _userById(userId);
+      return u.full_name || u.name || "este usuário";
+    }
+
+    function openRoleModal(userId) {
+      const u = _userById(userId);
       pendingRoleUserId = userId;
-      document.getElementById("roleModalBody").textContent = `Usuário: ${name}`;
-      document.getElementById("newRoleSelect").value = currentRole;
+      document.getElementById("roleModalBody").textContent = `Usuário: ${_nameOf(userId)}`;
+      document.getElementById("newRoleSelect").value = u.role || "PASSENGER";
       document.getElementById("roleModal").hidden = false;
     }
 
@@ -688,9 +703,9 @@
     }
 
     // ── Password modal ────────────────────────────────────────────────────────
-    function openPwdModal(userId, name) {
+    function openPwdModal(userId) {
       pendingPwdUserId = userId;
-      document.getElementById("pwdModalBody").textContent = `Usuário: ${name}`;
+      document.getElementById("pwdModalBody").textContent = `Usuário: ${_nameOf(userId)}`;
       document.getElementById("newPwdInput").value = "";
       document.getElementById("pwdModal").hidden = false;
     }
@@ -712,12 +727,12 @@
     }
 
     // ── Toggle active ─────────────────────────────────────────────────────────
-    function toggleActive(userId, name, currentActive) {
-      const newState = !currentActive;
+    function toggleActive(userId) {
+      const newState = !_userById(userId).is_active;
       CESUCAR.modal({
         icon: newState ? "✓" : "!",
         title: newState ? "Ativar conta" : "Desativar conta",
-        body: `${newState ? "Ativar" : "Desativar"} a conta de <strong>${name}</strong>?`,
+        body: `${newState ? "Ativar" : "Desativar"} a conta de <strong>${CESUCAR.esc(_nameOf(userId))}</strong>?`,
         confirmLabel: newState ? "Ativar" : "Desativar",
         onConfirm: async () => {
           const res = await CESUCAR.adminToggleActive(userId, newState);
@@ -729,11 +744,11 @@
     }
 
     // ── Delete user ───────────────────────────────────────────────────────────
-    function deleteUser(userId, name) {
+    function deleteUser(userId) {
       CESUCAR.modal({
         icon: "⚠",
         title: "Excluir usuário",
-        body: `Deseja excluir permanentemente a conta de <strong>${name}</strong>? Esta ação não pode ser desfeita.`,
+        body: `Deseja excluir permanentemente a conta de <strong>${CESUCAR.esc(_nameOf(userId))}</strong>? Esta ação não pode ser desfeita.`,
         confirmLabel: "Excluir permanentemente",
         onConfirm: async () => {
           try {

@@ -151,8 +151,9 @@
       const avatarText = (user.full_name || user.name || "?")
         .split(" ").filter(Boolean).map(p => p[0]).join("").toUpperCase().slice(0, 2);
 
+      const esc = CESUCAR.esc;
       const val = v => v
-        ? `<span class="pf-value">${v}</span>`
+        ? `<span class="pf-value">${esc(v)}</span>`
         : `<span class="pf-empty">Não informado</span>`;
 
       const vehicleHtml = isDriver ? `
@@ -193,13 +194,13 @@
       document.getElementById("profileRoot").innerHTML = `
         <div class="profile-card reveal">
           <div class="profile-header">
-            <div class="profile-avatar-lg">${avatarText}</div>
+            <div class="profile-avatar-lg">${esc(avatarText)}</div>
             <div class="profile-header-info">
-              <h2 class="profile-name">${user.full_name || user.name || "Usuário"}</h2>
+              <h2 class="profile-name">${esc(user.full_name || user.name || "Usuário")}</h2>
               <div class="profile-meta">
                 <span class="perfil-badge ${roleClass}">${roleLabel}</span>
-                ${user.rgm ? `<span>RGM ${user.rgm}</span>` : ""}
-                ${user.course ? `<span>· ${user.course}</span>` : ""}
+                ${user.rgm ? `<span>RGM ${esc(user.rgm)}</span>` : ""}
+                ${user.course ? `<span>· ${esc(user.course)}</span>` : ""}
               </div>
             </div>
           </div>
@@ -258,19 +259,19 @@
           <div class="profile-fields">
             <div class="form-group">
               <label class="form-label">Marca</label>
-              <input class="form-input" type="text" id="e-vbrand" value="${user.vehicle_brand || ""}" placeholder="Ex.: Volkswagen" />
+              <input class="form-input" type="text" id="e-vbrand" value="${esc(user.vehicle_brand || "")}" placeholder="Ex.: Volkswagen" />
             </div>
             <div class="form-group">
               <label class="form-label">Modelo</label>
-              <input class="form-input" type="text" id="e-vmodel" value="${user.vehicle_model || ""}" placeholder="Ex.: Gol 2020" />
+              <input class="form-input" type="text" id="e-vmodel" value="${esc(user.vehicle_model || "")}" placeholder="Ex.: Gol 2020" />
             </div>
             <div class="form-group">
               <label class="form-label">Cor</label>
-              <input class="form-input" type="text" id="e-vcolor" value="${user.vehicle_color || ""}" placeholder="Ex.: Prata" />
+              <input class="form-input" type="text" id="e-vcolor" value="${esc(user.vehicle_color || "")}" placeholder="Ex.: Prata" />
             </div>
             <div class="form-group">
               <label class="form-label">Placa</label>
-              <input class="form-input" type="text" id="e-vplate" value="${user.vehicle_plate || ""}" placeholder="Ex.: ABC-1D23" maxlength="8" style="text-transform:uppercase" />
+              <input class="form-input" type="text" id="e-vplate" value="${esc(user.vehicle_plate || "")}" placeholder="Ex.: ABC-1D23" maxlength="8" style="text-transform:uppercase" />
             </div>
             <div class="form-group">
               <label class="form-label">Lugares disponíveis</label>
@@ -285,7 +286,7 @@
       document.getElementById("profileRoot").innerHTML = `
         <div class="profile-card reveal">
           <div class="profile-header">
-            <div class="profile-avatar-lg">${avatarText}</div>
+            <div class="profile-avatar-lg">${esc(avatarText)}</div>
             <div class="profile-header-info">
               <h2 class="profile-name">Editar perfil</h2>
               <div class="profile-meta">Altere seus dados e clique em Salvar</div>
@@ -298,11 +299,11 @@
               <div class="profile-fields">
                 <div class="form-group">
                   <label class="form-label">Nome completo</label>
-                  <input class="form-input" type="text" id="e-name" value="${user.full_name || user.name || ""}" />
+                  <input class="form-input" type="text" id="e-name" value="${esc(user.full_name || user.name || "")}" />
                 </div>
                 <div class="form-group">
                   <label class="form-label">Telefone</label>
-                  <input class="form-input" type="tel" id="e-phone" value="${user.phone || ""}" placeholder="(51) 99999-0000" maxlength="15" />
+                  <input class="form-input" type="tel" id="e-phone" value="${esc(user.phone || "")}" placeholder="(51) 99999-0000" maxlength="15" />
                 </div>
                 <div class="form-group">
                   <label class="form-label">Curso</label>
@@ -360,7 +361,7 @@
       if (!bairros.length) { wrap.hidden = true; return; }
       wrap.hidden = false;
       select.innerHTML = `<option value="">Selecione o bairro</option>` +
-        bairros.map(b => `<option${b === currentBairro ? " selected" : ""}>${b}</option>`).join("");
+        bairros.map(b => `<option${b === currentBairro ? " selected" : ""}>${esc(b)}</option>`).join("");
     }
 
     async function saveEdit() {

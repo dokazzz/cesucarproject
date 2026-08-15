@@ -3,9 +3,10 @@ from __future__ import annotations
 
 from datetime import date, datetime, timezone
 
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, select, tuple_
 from sqlalchemy.orm import Session, joinedload
 
+from app_time import local_to_utc
 from database.models.ride_offer import RideOffer
 from database.models.ride_request import RideRequest
 
@@ -25,7 +26,18 @@ class RideRepository:
         departure_city: str | None = None,
         ride_date: date | None = None,
         status: str = "ACTIVE",   # PostgreSQL enum value — uppercase
+        limit: int | None = None,
+        after: tuple[datetime, str] | None = None,
     ) -> list[RideOffer]:
+        """
+        Search active rides.
+
+        `limit` and `after` implement keyset pagination. Ordering is
+        (departure_time, id): the timestamp is what users care about and the
+        id breaks ties so the sort is total, which is what makes the cursor
+        stable. OFFSET would drift as rides are published or cancelled between
+        pages -- a phone scrolling a list would see duplicates and gaps.
+        """
         stmt = (
             select(RideOffer)
             .options(
@@ -33,7 +45,7 @@ class RideRepository:
                 joinedload(RideOffer.requests),
             )
             .where(RideOffer.status == status.upper())
-            .order_by(RideOffer.departure_time)
+            .order_by(RideOffer.departure_time, RideOffer.id)
         )
         if trip_type:
             stmt = stmt.where(RideOffer.trip_type == trip_type.upper())
@@ -42,11 +54,29 @@ class RideRepository:
                 func.lower(RideOffer.departure_city) == func.lower(departure_city)
             )
         if ride_date:
-            start = datetime(ride_date.year, ride_date.month, ride_date.day, tzinfo=timezone.utc)
-            end   = datetime(ride_date.year, ride_date.month, ride_date.day, 23, 59, 59, tzinfo=timezone.utc)
-            stmt  = stmt.where(
+            # A calendar day is a local-time concept. Building the bounds in
+            # UTC put the window three hours out and silently dropped rides
+            # from the last three hours of the requested day.
+            start = local_to_utc(datetime(ride_date.year, ride_date.month, ride_date.day))
+            end = local_to_utc(
+                datetime(ride_date.year, ride_date.month, ride_date.day, 23, 59, 59)
+            )
+            stmt = stmt.where(
                 and_(RideOffer.departure_time >= start, RideOffer.departure_time <= end)
             )
+        if after is not None:
+            cursor_time, cursor_id = after
+            stmt = stmt.where(
+                tuple_(RideOffer.departure_time, RideOffer.id) > (cursor_time, cursor_id)
+            )
+        if limit is not None:
+            # joinedload against a collection multiplies rows, so LIMIT cannot
+            # be applied in SQL without truncating a ride's requests. The
+            # result set here is one campus's active rides; slicing after the
+            # fact is correct and fast enough. Revisit with a subquery load if
+            # that stops being true.
+            rides = list(self.db.execute(stmt).unique().scalars().all())
+            return rides[:limit]
         return list(self.db.execute(stmt).unique().scalars().all())
 
     def find_by_id(self, ride_id) -> RideOffer | None:

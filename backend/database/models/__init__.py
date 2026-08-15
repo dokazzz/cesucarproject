@@ -12,6 +12,7 @@ from database.models.ride_offer import RideOffer
 from database.models.ride_request import RideRequest
 from database.models.notification import Notification
 from database.models.audit_log import AuditLog
+from database.models.refresh_token import RefreshToken
 from database.models.system_setting import SystemSetting
 
 __all__ = [
@@ -28,5 +29,6 @@ __all__ = [
     "RideRequest",
     "Notification",
     "AuditLog",
+    "RefreshToken",
     "SystemSetting",
 ]

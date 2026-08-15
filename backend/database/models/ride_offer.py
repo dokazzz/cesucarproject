@@ -13,6 +13,7 @@ from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app_time import to_local
 from database.connection import Base
 from database.models.enums import RideStatus, TripType
 
@@ -115,12 +116,55 @@ class RideOffer(Base):
     def is_full(self) -> bool:
         return self.seats_available() == 0
 
+    # ── Visibility ────────────────────────────────────────────────────────────
+
+    # Serialization tiers, widest last. Each tier adds to the one before it.
+    #   public  — anonymous browse: route, schedule, price, seats. No identity.
+    #   auth    — signed-in student: who is driving and what car, to pick a ride.
+    #   contact — driver, admin, or a passenger whose request was APPROVED:
+    #             phone, plate, and the driver's home neighborhood.
+    VIS_PUBLIC:  str = "public"
+    VIS_AUTH:    str = "auth"
+    VIS_CONTACT: str = "contact"
+
+    def visibility_for(self, viewer: "User | None") -> str:
+        """Return the serialization tier this viewer has earned on this ride."""
+        if viewer is None:
+            return self.VIS_PUBLIC
+
+        if str(viewer.id) == str(self.driver_id):
+            return self.VIS_CONTACT
+
+        role = getattr(viewer.role, "value", viewer.role)
+        if str(role).upper() == "ADMIN":
+            return self.VIS_CONTACT
+
+        # `requests` is eager-loaded by RideRepository, so this costs no query.
+        for req in self.requests:
+            if str(req.passenger_id) == str(viewer.id) and req.status.value == "APPROVED":
+                return self.VIS_CONTACT
+
+        return self.VIS_AUTH
+
     # ── Serialization ─────────────────────────────────────────────────────────
 
-    def to_dict(self) -> dict:
+    def to_dict(self, viewer: "User | None" = None) -> dict:
+        """
+        Serialize for a specific viewer.
+
+        Driver contact details are withheld unless the viewer has a reason to
+        have them. Passing no viewer yields the public tier — the safe default,
+        so a caller that forgets to thread the viewer through under-shares
+        rather than leaking.
+        """
+        tier = self.visibility_for(viewer)
         driver = self.driver
-        return {
-            # English keys
+        # departure_time is a UTC instant; the "data"/"horario" strings are
+        # what a student reads, so they are rendered in local time.
+        local = to_local(self.departure_time)
+
+        # ── Public: the trip itself, nothing that identifies who is driving ──
+        data = {
             "id":                   str(self.id),
             "driver_id":            str(self.driver_id),
             "trip_type":            self.trip_type.value,
@@ -129,34 +173,46 @@ class RideOffer(Base):
             "departure_time":       self.departure_time.isoformat() if self.departure_time else None,
             "available_seats":      self.available_seats,
             "price_per_passenger":  float(self.price_per_passenger),
-            "vehicle":              self.vehicle,
-            "license_plate":        self.license_plate,
             "status":               self.status.value,
             # Portuguese aliases (frontend backward-compat)
             "tipo":                 self.tipo,
             "origem":               self.origem,
             "destino":              self.destino,
-            "data":                 self.departure_time.strftime("%d/%m/%Y") if self.departure_time else None,
-            "horario":              self.departure_time.strftime("%H:%M") if self.departure_time else None,
+            "data":                 local.strftime("%d/%m/%Y") if local else None,
+            "horario":              local.strftime("%H:%M") if local else None,
             "vagas":                self.available_seats,
             "vagasDisp":            self.seats_available(),
             "vagas_disp":           self.seats_available(),
             "valor":                float(self.price_per_passenger),
-            "veiculo":              self.vehicle,
-            "placa":                self.license_plate,
-            # Driver info
+        }
+        if tier == self.VIS_PUBLIC:
+            return data
+
+        # ── Authenticated: who is driving, and enough of the car to find it ──
+        data.update({
             "driver":               driver.full_name if driver else None,
             "driver_avatar":        driver.avatar if driver else "CE",
             "driverAvatar":         driver.avatar if driver else "CE",
             "course":               driver.course if driver else None,
             "curso":                driver.course if driver else None,
-            "driver_phone":         driver.phone if driver else None,
-            "driver_neighborhood":  driver.neighborhood if driver else None,
             "driver_vehicle_model": driver.vehicle_model if driver else None,
             "driver_vehicle_brand": driver.vehicle_brand if driver else None,
             "driver_vehicle_color": driver.vehicle_color if driver else None,
-            "neighborhood":         self.neighborhood,
-        }
+            "vehicle":              self.vehicle,
+            "veiculo":              self.vehicle,
+            "neighborhood":         self.neighborhood,   # pickup area for this ride
+        })
+        if tier == self.VIS_AUTH:
+            return data
+
+        # ── Contact: only once there is a relationship to justify it ─────────
+        data.update({
+            "license_plate":        self.license_plate,
+            "placa":                self.license_plate,
+            "driver_phone":         driver.phone if driver else None,
+            "driver_neighborhood":  driver.neighborhood if driver else None,  # driver's home
+        })
+        return data
 
     def __repr__(self) -> str:
         return (
