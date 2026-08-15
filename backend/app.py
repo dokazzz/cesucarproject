@@ -56,6 +56,22 @@ async def lifespan(app: FastAPI):
     finally:
         db.close()
 
+    # Rows whose expiry has passed cannot authenticate anything; they are
+    # only bulk. Cheap enough to do at startup and it needs no scheduler.
+    db = SessionLocal()
+    try:
+        from database.repositories.refresh_token_repository import RefreshTokenRepository
+        purged = RefreshTokenRepository(db).purge_expired()
+        db.commit()
+        if purged:
+            logger.info("Purged expired refresh tokens", extra={"count": purged})
+    except Exception as exc:                      # noqa: BLE001
+        # Housekeeping must never stop the application from starting.
+        logger.warning("Refresh token purge skipped: %s", exc)
+        db.rollback()
+    finally:
+        db.close()
+
     logger.info(
         "CESUCAR API started",
         extra={"build": _BUILD_ID, "debug": config.DEBUG,
@@ -163,9 +179,24 @@ async def request_context(request: Request, call_next):
     response.headers["X-App-Version"] = _BUILD_ID
     response.headers["X-Request-ID"] = request.state.request_id
 
+    # Defence in depth behind the output escaping. These cost nothing and
+    # close off whole classes of attack independently of application code.
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+
+    path = request.url.path
+    if path.startswith(API_LEGACY):
+        # An API response is never a document: it loads nothing and frames
+        # nothing, so the strictest possible policy applies. The HTML pages
+        # deliberately get no CSP yet -- they still use inline handlers, and a
+        # policy with 'unsafe-inline' would be theatre. That is a frontend
+        # change, noted when those handlers were touched.
+        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+
     # Tell unversioned callers, in a machine-readable way, that they are on a
     # path with an end date. RFC 8594 / RFC 9745 headers.
-    path = request.url.path
     if path.startswith(f"{API_LEGACY}/") and not path.startswith(f"{API_V1}/"):
         response.headers["Deprecation"] = "true"
         response.headers["Sunset"] = config.API_SUNSET_DATE
@@ -225,8 +256,33 @@ def api_version() -> dict:
 
 @app.get("/status", tags=["Health"])
 def health_check() -> dict:
-    """Health-check endpoint — returns system status."""
+    """Liveness — the process is up and serving. Does not touch the database."""
     return {"sistema": "CESUCAR", "status": "Online", "version": "2.0.0", "build": _BUILD_ID}
+
+
+@app.get("/health", tags=["Health"])
+def readiness_check(db: Session = Depends(get_db)) -> JSONResponse:
+    """
+    Readiness — the process is up AND can reach the database.
+
+    Separate from /status on purpose. A load balancer pointed at a liveness
+    check will happily keep sending traffic to an instance whose database
+    connection has died, because the process itself is fine. This is the one
+    to point a deployment healthcheck at.
+    """
+    from sqlalchemy import text
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception as exc:                      # noqa: BLE001
+        logger.error("Readiness check failed", extra={"error": str(exc)})
+        return JSONResponse(
+            status_code=503,
+            content={"status": "degraded", "database": "unreachable", "build": _BUILD_ID},
+        )
+    return JSONResponse(
+        status_code=200,
+        content={"status": "ok", "database": "ok", "build": _BUILD_ID},
+    )
 
 
 

@@ -1,8 +1,9 @@
 """AdminController — handles HTTP concerns for admin endpoints."""
 from __future__ import annotations
 
-from fastapi import HTTPException
 from sqlalchemy.orm import Session
+
+from errors import ApiError, ErrorCode
 
 from database.repositories.audit_log_repository import AuditLogRepository
 from database.repositories.ride_repository import RideRepository
@@ -27,7 +28,7 @@ class AdminController:
     def get_user(self, user_id) -> dict:
         user = self._users.find_by_id(user_id)
         if not user:
-            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+            raise ApiError(404, "Usuário não encontrado.", ErrorCode.NOT_FOUND)
         return user.to_dict()
 
     def get_stats(self) -> dict:
@@ -55,10 +56,10 @@ class AdminController:
     def update_user_role(self, user_id, role: str, admin_id) -> dict:
         normalized_role = role.strip().upper()
         if normalized_role not in _VALID_ROLES:
-            raise HTTPException(status_code=400, detail="Role inválida.")
+            raise ApiError(400, "Role inválida.", ErrorCode.VALIDATION_FAILED)
         user = self._users.update(user_id, role=normalized_role)
         if not user:
-            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+            raise ApiError(404, "Usuário não encontrado.", ErrorCode.NOT_FOUND)
         self._audit.log(
             action="USER_UPDATED",
             user_id=admin_id,
@@ -69,10 +70,10 @@ class AdminController:
 
     def toggle_active(self, user_id, is_active: bool, admin_id) -> dict:
         if str(user_id) == str(admin_id):
-            raise HTTPException(status_code=400, detail="Você não pode desativar sua própria conta.")
+            raise ApiError(400, "Você não pode desativar sua própria conta.", ErrorCode.FORBIDDEN)
         user = self._users.update(user_id, is_active=is_active)
         if not user:
-            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+            raise ApiError(404, "Usuário não encontrado.", ErrorCode.NOT_FOUND)
         self._audit.log(
             action="USER_UPDATED",
             user_id=admin_id,
@@ -83,10 +84,10 @@ class AdminController:
 
     def delete_user(self, user_id, admin_id) -> dict:
         if str(user_id) == str(admin_id):
-            raise HTTPException(status_code=400, detail="Você não pode excluir sua própria conta.")
+            raise ApiError(400, "Você não pode excluir sua própria conta.", ErrorCode.FORBIDDEN)
         deleted = self._users.delete(user_id)
         if not deleted:
-            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+            raise ApiError(404, "Usuário não encontrado.", ErrorCode.NOT_FOUND)
         self._audit.log(
             action="USER_DELETED",
             user_id=admin_id,
@@ -100,11 +101,11 @@ class AdminController:
 
     def reset_password(self, user_id, new_password: str, admin_id) -> dict:
         if len(new_password) < 6:
-            raise HTTPException(status_code=400, detail="A senha deve ter pelo menos 6 caracteres.")
+            raise ApiError(400, "A senha deve ter pelo menos 6 caracteres.", ErrorCode.VALIDATION_FAILED)
         password_hash = AuthService.hash_password(new_password)
         user = self._users.update(user_id, password_hash=password_hash)
         if not user:
-            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+            raise ApiError(404, "Usuário não encontrado.", ErrorCode.NOT_FOUND)
         self._audit.log(
             action="PASSWORD_CHANGED",
             user_id=admin_id,
