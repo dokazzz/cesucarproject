@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from jose import jwt
 from passlib.context import CryptContext
@@ -179,7 +179,7 @@ class AuthService:
         alone, never looked up. Its lifetime is therefore also the maximum
         delay before a disabled account or a changed role stops taking effect.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         payload = {
             "sub":  str(user.id),
             "rgm":  user.rgm,

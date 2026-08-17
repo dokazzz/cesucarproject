@@ -5,10 +5,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, DateTime, Text, UniqueConstraint
-from sqlalchemy import ForeignKey, Enum as SAEnum
+from sqlalchemy import DateTime, ForeignKey, Text, UniqueConstraint
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -16,9 +16,9 @@ from database.connection import Base
 from database.models.enums import RequestStatus
 
 if TYPE_CHECKING:
+    from database.models.notification import Notification
     from database.models.ride_offer import RideOffer
     from database.models.user import User
-    from database.models.notification import Notification
 
 
 class RideRequest(Base):
@@ -47,7 +47,7 @@ class RideRequest(Base):
         nullable=False,
         default=RequestStatus.PENDING,
     )
-    message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # ── Timestamps ────────────────────────────────────────────────────────────
     created_at: Mapped[datetime] = mapped_column(
@@ -58,9 +58,9 @@ class RideRequest(Base):
     )
 
     # ── Relationships ─────────────────────────────────────────────────────────
-    ride: Mapped["RideOffer"] = relationship("RideOffer", back_populates="requests")
-    passenger: Mapped["User"] = relationship("User", back_populates="ride_requests")
-    notifications: Mapped[list["Notification"]] = relationship(
+    ride: Mapped[RideOffer] = relationship("RideOffer", back_populates="requests")
+    passenger: Mapped[User] = relationship("User", back_populates="ride_requests")
+    notifications: Mapped[list[Notification]] = relationship(
         "Notification",
         back_populates="related_request",
         foreign_keys="Notification.related_request_id",
@@ -68,7 +68,7 @@ class RideRequest(Base):
 
     # ── Serialization ─────────────────────────────────────────────────────────
 
-    def to_dict(self, viewer: "User | None" = None) -> dict:
+    def to_dict(self, viewer: User | None = None) -> dict:
         # The nested ride is serialized for `viewer`, not unconditionally — a
         # PENDING request must not hand out the driver's phone via this route.
         d: dict = {

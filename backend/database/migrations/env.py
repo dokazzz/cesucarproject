@@ -1,8 +1,8 @@
 """Alembic environment configuration."""
 from __future__ import annotations
 
-import sys
 import os
+import sys
 
 # Make sure the backend/ directory is on the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -13,10 +13,10 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from config import config as app_config
+from database.connection import Base
 
 # Import all models so Alembic can detect them
-from database.models import User, RideOffer, RideRequest, Notification, AuditLog  # noqa: F401
-from database.connection import Base
+from database.models import AuditLog, Notification, RideOffer, RideRequest, User  # noqa: F401
 
 # Alembic Config object from alembic.ini
 alembic_config = context.config

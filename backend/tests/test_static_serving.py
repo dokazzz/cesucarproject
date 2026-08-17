@@ -20,13 +20,13 @@ import pytest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-PROBE = """
+PROBE = f"""
 import json, os, sys
-sys.path.insert(0, os.path.join(%r, "backend"))
-sys.path.insert(0, %r)
+sys.path.insert(0, os.path.join({ROOT!r}, "backend"))
+sys.path.insert(0, {ROOT!r})
 import main
-print(json.dumps({"pages": sorted(main._PAGES), "assets": sorted(main._ASSETS)}))
-""" % (ROOT, ROOT)
+print(json.dumps({{"pages": sorted(main._PAGES), "assets": sorted(main._ASSETS)}}))
+"""
 
 
 @pytest.fixture(scope="module")

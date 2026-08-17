@@ -79,11 +79,11 @@ def seed() -> None:
         )
         session.commit()
 
-        print(f"Admin account created successfully.")
+        print("Admin account created successfully.")
         print(f"  RGM      : {ADMIN_RGM}")
         print(f"  Name     : {ADMIN_NAME}")
-        print(f"  Password : (from ADMIN_PASSWORD env var)")
-        print(f"  Role     : ADMIN")
+        print("  Password : (from ADMIN_PASSWORD env var)")
+        print("  Role     : ADMIN")
         print()
         print("IMPORTANT: Keep ADMIN_PASSWORD secret and never commit it to version control.")
 

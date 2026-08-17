@@ -1,8 +1,6 @@
 """Admin routes — protected by admin role."""
 from __future__ import annotations
 
-from typing import Optional
-
 from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -18,8 +16,8 @@ _admin_only = require_role("admin")
 
 @router.get("/users", summary="List all users")
 def list_users(
-    search: Optional[str] = Query(None),
-    role: Optional[str] = Query(None),
+    search: str | None = Query(None),
+    role: str | None = Query(None),
     db: Session = Depends(get_db),
     _: User = Depends(_admin_only),
 ) -> list:

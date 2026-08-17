@@ -33,6 +33,10 @@ jobs:
       - name: Install dependencies
         run: pip install -r backend/requirements-dev.txt
 
+      - name: Lint
+        working-directory: backend
+        run: ruff check . ../main.py
+
       - name: Run tests
         working-directory: backend
         run: pytest

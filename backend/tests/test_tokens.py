@@ -9,7 +9,7 @@ need Postgres and are not exercised here.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -18,7 +18,7 @@ from database.models.refresh_token import RefreshToken
 from database.repositories.refresh_token_repository import generate_token, hash_token
 from services.auth_service import AuthError, AuthService
 
-NOW = datetime.now(timezone.utc)
+NOW = datetime.now(UTC)
 
 
 def make_token_row(**overrides) -> RefreshToken:

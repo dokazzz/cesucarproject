@@ -21,15 +21,15 @@ class NotificationService:
             for n in self._notifs.find_by_user(user_id, limit, unread_only=unread_only)
         ]
 
-    def mark_all_read(self, user_id: int) -> dict:
+    def mark_all_read(self, user_id) -> dict:
         count = self._notifs.mark_all_read(user_id)
         self.db.commit()
         return {"updated": count}
 
-    def create_notification(self, user_id: int, title: str, message: str) -> dict:
+    def create_notification(self, user_id, title: str, message: str) -> dict:
         notif = self._notifs.create(user_id, title, message)
         self.db.commit()
         return notif.to_dict()
 
-    def unread_count(self, user_id: int) -> int:
+    def unread_count(self, user_id) -> int:
         return self._notifs.count_unread(user_id)

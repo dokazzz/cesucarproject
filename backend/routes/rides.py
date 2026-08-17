@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
@@ -19,13 +18,13 @@ router = APIRouter(tags=["Rides"])
 @router.get("/rides", summary="List / search active ride offers")
 def list_rides(
     request: Request,
-    trip_type: Optional[str] = None,
-    departure_city: Optional[str] = None,
-    date: Optional[date] = None,
+    trip_type: str | None = None,
+    departure_city: str | None = None,
+    date: date | None = None,
     limit: int = Query(50, ge=1, le=100),
-    cursor: Optional[str] = None,
+    cursor: str | None = None,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user),
+    current_user: User | None = Depends(get_optional_user),
 ):
     """
     Under /api/v1 this returns a page: {items, next_cursor, has_more}.
@@ -48,7 +47,7 @@ def list_rides(
 def get_ride(
     ride_id: str,
     db: Session = Depends(get_db),
-    current_user: Optional[User] = Depends(get_optional_user),
+    current_user: User | None = Depends(get_optional_user),
 ) -> dict:
     return RideController(db).get_ride(ride_id, viewer=current_user)
 

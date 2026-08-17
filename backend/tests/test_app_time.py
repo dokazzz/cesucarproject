@@ -10,7 +10,7 @@ phone does.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from app_time import local_to_utc, now_utc, parse_local, to_local
 
@@ -28,13 +28,13 @@ def test_round_trip_returns_what_the_driver_typed():
 
 def test_the_old_behaviour_was_three_hours_early():
     """Documents the bug, so a regression fails here with an explanation."""
-    old = datetime.strptime("2026-08-20 07:00", "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+    old = datetime.strptime("2026-08-20 07:00", "%Y-%m-%d %H:%M").replace(tzinfo=UTC)
     assert to_local(old).strftime("%H:%M") == "04:00"
 
 
 def test_migration_shift_repairs_an_affected_row():
     """Migration 003 adds three hours; this is the value it must produce."""
-    old = datetime.strptime("2026-08-20 07:00", "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+    old = datetime.strptime("2026-08-20 07:00", "%Y-%m-%d %H:%M").replace(tzinfo=UTC)
     assert old + timedelta(hours=3) == parse_local("2026-08-20", "07:00")
 
 
@@ -44,7 +44,7 @@ def test_naive_datetimes_are_read_as_local():
 
 
 def test_aware_datetimes_are_not_shifted_twice():
-    already_utc = datetime(2026, 8, 20, 10, 0, tzinfo=timezone.utc)
+    already_utc = datetime(2026, 8, 20, 10, 0, tzinfo=UTC)
     assert local_to_utc(already_utc) == already_utc
 
 

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy import DateTime, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
@@ -25,8 +25,8 @@ class SystemSetting(Base):
 
     # ── Key / value ───────────────────────────────────────────────────────────
     key: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
-    value: Mapped[Optional[Any]] = mapped_column(JSONB, nullable=True)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    value: Mapped[Any | None] = mapped_column(JSONB, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # ── Timestamps ────────────────────────────────────────────────────────────
     created_at: Mapped[datetime] = mapped_column(

@@ -1,0 +1,23 @@
+# Linting rules for the backend.
+line-length = 100
+target-version = "py312"
+
+[lint]
+select = ["F", "E9", "W", "I", "UP", "B", "SIM"]
+ignore = [
+    "E501",   # line length is advisory here, not enforced
+    # Depends() in a parameter default is the FastAPI idiom, not a mistake.
+    # The call is evaluated once at import to build the dependency graph,
+    # which is exactly the intent. Flagging it would mean 65 noise findings.
+    "B008",
+    # Suggests StrEnum over (str, Enum). Declining deliberately: StrEnum
+    # changes what str(member) returns, and role values are compared as
+    # strings against the PostgreSQL enum in several places. The churn would
+    # be silent and the benefit cosmetic.
+    "UP042",
+]
+
+[lint.per-file-ignores]
+# Tests deliberately import application modules after setting the environment,
+# because config validates at import time.
+"tests/*" = ["E402"]

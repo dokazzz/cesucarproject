@@ -1,5 +1,6 @@
 from passlib.context import CryptContext
 from sqlalchemy import create_engine, text
+
 from config import config
 
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")

@@ -25,16 +25,22 @@ _BUILD_ID = os.environ.get("VERCEL_GIT_COMMIT_SHA", "dev")[:12]
 
 from config import config
 from database.connection import SessionLocal, engine, get_db
-from database.models import User, RideOffer, RideRequest, Notification, AuditLog  # noqa: F401 — needed for Alembic
+from database.models import (  # noqa: F401 — needed for Alembic
+    AuditLog,
+    Notification,
+    RideOffer,
+    RideRequest,
+    User,
+)
 from database.repositories.ride_repository import RideRepository
 from database.repositories.user_repository import UserRepository
 from errors import ApiError, ErrorCode, api_error_handler
 from logging_config import setup_logging
 from rate_limit import client_ip, limiter
-from routes.auth import router as auth_router
-from routes.rides import router as rides_router
-from routes.notifications import router as notifications_router
 from routes.admin import router as admin_router
+from routes.auth import router as auth_router
+from routes.notifications import router as notifications_router
+from routes.rides import router as rides_router
 
 logger = setup_logging()
 
@@ -94,18 +100,25 @@ app = FastAPI(
     ),
     version="2.0.0",
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc",
+    # None disables the route entirely rather than hiding it. See ENABLE_DOCS.
+    docs_url="/docs" if config.ENABLE_DOCS else None,
+    redoc_url="/redoc" if config.ENABLE_DOCS else None,
+    openapi_url="/openapi.json" if config.ENABLE_DOCS else None,
 )
 
 # ── CORS ───────────────────────────────────────────────────────────────────────
 
+# Authentication is a Bearer token, not a cookie, so credentialed requests are
+# never needed -- and allow_credentials with a wildcard is the combination that
+# turns a CORS mistake into account takeover. Methods and headers are listed
+# rather than wildcarded for the same reason: nothing here needs the breadth.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Client-Version"],
+    expose_headers=["X-Request-ID", "X-App-Version", "Deprecation", "Sunset"],
 )
 
 # ── Rate limiting ──────────────────────────────────────────────────────────────

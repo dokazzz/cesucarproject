@@ -3,17 +3,16 @@ from __future__ import annotations
 
 import base64
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 
 from sqlalchemy.orm import Session
 
 from app_time import parse_local, to_local
 from database.models.ride_offer import (
-    RideOffer,
     TRIP_GOING,
     TRIP_RETURNING,
+    RideOffer,
 )
-from database.models.ride_request import RideRequest
 from database.repositories.audit_log_repository import AuditLogRepository
 from database.repositories.notification_repository import NotificationRepository
 from database.repositories.ride_repository import RideRepository

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, CheckConstraint, DateTime, SmallInteger, String, UniqueConstraint
 from sqlalchemy import Enum as SAEnum
@@ -19,10 +19,10 @@ from database.connection import Base
 from database.models.enums import UserRole
 
 if TYPE_CHECKING:
+    from database.models.audit_log import AuditLog
+    from database.models.notification import Notification
     from database.models.ride_offer import RideOffer
     from database.models.ride_request import RideRequest
-    from database.models.notification import Notification
-    from database.models.audit_log import AuditLog
 
 
 class User(Base):
@@ -51,17 +51,17 @@ class User(Base):
     )
 
     # ── Profile fields (optional) ─────────────────────────────────────────────
-    course: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    city: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    neighborhood: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    course: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    city: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    neighborhood: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # ── Driver vehicle info (optional — only populated for DRIVER role) ───────
-    vehicle_model: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    vehicle_brand: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    vehicle_color: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    vehicle_seats: Mapped[Optional[int]] = mapped_column(SmallInteger, nullable=True)
-    vehicle_plate: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
+    vehicle_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    vehicle_brand: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    vehicle_color: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    vehicle_seats: Mapped[int | None] = mapped_column(SmallInteger, nullable=True)
+    vehicle_plate: Mapped[str | None] = mapped_column(String(10), nullable=True)
 
     # ── Status & timestamps ───────────────────────────────────────────────────
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
@@ -73,16 +73,16 @@ class User(Base):
     )
 
     # ── Relationships ─────────────────────────────────────────────────────────
-    ride_offers: Mapped[list["RideOffer"]] = relationship(
+    ride_offers: Mapped[list[RideOffer]] = relationship(
         "RideOffer", back_populates="driver", cascade="all, delete-orphan"
     )
-    ride_requests: Mapped[list["RideRequest"]] = relationship(
+    ride_requests: Mapped[list[RideRequest]] = relationship(
         "RideRequest", back_populates="passenger", cascade="all, delete-orphan"
     )
-    notifications: Mapped[list["Notification"]] = relationship(
+    notifications: Mapped[list[Notification]] = relationship(
         "Notification", back_populates="user", cascade="all, delete-orphan"
     )
-    audit_logs: Mapped[list["AuditLog"]] = relationship(
+    audit_logs: Mapped[list[AuditLog]] = relationship(
         "AuditLog", back_populates="user"
     )
 

@@ -14,8 +14,8 @@ from __future__ import annotations
 
 import sys
 
-from database.connection import engine, SessionLocal
-from database.models import User, RideOffer, RideRequest, Notification, AuditLog  # noqa: F401
+from database.connection import SessionLocal, engine
+from database.models import AuditLog, Notification, RideOffer, RideRequest, User  # noqa: F401
 
 
 def create_tables() -> None:

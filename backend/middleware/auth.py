@@ -9,13 +9,12 @@ from __future__ import annotations
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy.orm import Session
 
 from database.connection import get_db
 from database.models.user import User
 from database.repositories.user_repository import UserRepository
 from services.auth_service import AuthError, AuthService
-
-from sqlalchemy.orm import Session
 
 _bearer = HTTPBearer(auto_error=False)
 
@@ -46,12 +45,12 @@ def get_current_user(
             raise AuthError("Token inválido ou expirado.", 401)
         # sub is stored as a UUID string — do NOT cast to int
         user_id: str = payload["sub"]
-    except (AuthError, KeyError):
+    except (AuthError, KeyError) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido ou expirado.",
             headers={"WWW-Authenticate": "Bearer"},
-        )
+        ) from exc
 
     user = UserRepository(db).find_by_id(user_id)
     if user is None:

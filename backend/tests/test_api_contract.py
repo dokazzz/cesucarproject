@@ -163,6 +163,62 @@ class TestRateLimiting:
         assert last.json()["code"] == ErrorCode.RATE_LIMITED
 
 
+class TestDocsExposure:
+    """
+    Swagger and ReDoc are a complete map of the API surface. Handy for a demo,
+    less so for whoever finds the host. ENABLE_DOCS defaults to DEBUG, and the
+    suite runs with DEBUG off, so they should be gone here.
+    """
+
+    @pytest.mark.parametrize("path", ["/docs", "/redoc", "/openapi.json"])
+    def test_docs_are_absent_when_disabled(self, client, path):
+        assert client.get(path).status_code == 404
+
+    def test_the_api_itself_still_works_without_docs(self, client):
+        """Disabling documentation must not disable anything else."""
+        assert client.get("/status").status_code == 200
+
+
+class TestCors:
+    def test_credentialed_requests_are_not_allowed(self, client):
+        """
+        Authentication is a Bearer token, not a cookie. allow_credentials with
+        a permissive origin is the combination that turns a CORS mistake into
+        account takeover, and nothing here needs it.
+        """
+        response = client.options(
+            "/api/v1/rides",
+            headers={
+                "Origin": "http://localhost:5500",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert response.headers.get("access-control-allow-credentials") is None
+
+    def test_an_unlisted_origin_is_not_echoed_back(self, client):
+        response = client.options(
+            "/api/v1/rides",
+            headers={
+                "Origin": "https://attacker.example",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert response.headers.get("access-control-allow-origin") != "https://attacker.example"
+
+    def test_clients_can_read_the_request_id(self, client):
+        """
+        Exposed deliberately, so a browser client can report it.
+
+        Checked on a real request rather than a preflight:
+        Access-Control-Expose-Headers is returned with the actual response,
+        not with the OPTIONS that precedes it.
+        """
+        response = client.get("/api/v1/auth/me",
+                              headers={"Origin": "http://localhost:5500"})
+        exposed = response.headers.get("access-control-expose-headers", "")
+        assert "X-Request-ID" in exposed
+
+
 class TestCrashResponses:
     """
     The handler used to swallow every exception and return a bare 500 with no

@@ -6,7 +6,6 @@ calcular custos e gerenciar o ciclo de vida das viagens.
 """
 
 from __future__ import annotations
-from typing import Optional
 
 
 class Carona:
@@ -38,7 +37,7 @@ class Carona:
         veiculo: str = "",
         tipo: str = "ida",
     ) -> None:
-        self.id: Optional[int] = None
+        self.id: int | None = None
         self.motorista = motorista
         self.origem = origem
         self.destino = destino
@@ -148,7 +147,7 @@ class GerenciadorCaronas:
         self._caronas.append(carona)
         return carona
 
-    def listar(self, tipo: Optional[str] = None) -> list[dict]:
+    def listar(self, tipo: str | None = None) -> list[dict]:
         """
         Retorna todas as caronas como lista de dicionários.
 
@@ -160,11 +159,11 @@ class GerenciadorCaronas:
             resultado = [c for c in resultado if c.tipo == tipo]
         return [c.to_dict() for c in resultado]
 
-    def buscar_por_id(self, carona_id: int) -> Optional[Carona]:
+    def buscar_por_id(self, carona_id: int) -> Carona | None:
         """Retorna a carona com o ID fornecido, ou None se não encontrada."""
         return next((c for c in self._caronas if c.id == carona_id), None)
 
-    def atualizar(self, carona_id: int, dados: dict) -> Optional[Carona]:
+    def atualizar(self, carona_id: int, dados: dict) -> Carona | None:
         """
         Atualiza campos de uma carona existente.
 

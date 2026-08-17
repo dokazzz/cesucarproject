@@ -6,7 +6,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from decimal import Decimal
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Numeric, SmallInteger, String, Text
 from sqlalchemy import Enum as SAEnum
@@ -23,9 +23,9 @@ TRIP_GOING: str = TripType.GOING_TO_CESUCA.value   # "GOING_TO_CESUCA"
 TRIP_RETURNING: str = TripType.RETURNING_HOME.value  # "RETURNING_HOME"
 
 if TYPE_CHECKING:
-    from database.models.user import User
-    from database.models.ride_request import RideRequest
     from database.models.notification import Notification
+    from database.models.ride_request import RideRequest
+    from database.models.user import User
 
 
 class RideOffer(Base):
@@ -61,10 +61,10 @@ class RideOffer(Base):
     )
 
     # ── Vehicle info (optional) ───────────────────────────────────────────────
-    vehicle: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
-    license_plate: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    neighborhood: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    vehicle: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    license_plate: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    neighborhood: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     # ── Status & timestamps ───────────────────────────────────────────────────
     status: Mapped[RideStatus] = mapped_column(
@@ -80,11 +80,11 @@ class RideOffer(Base):
     )
 
     # ── Relationships ─────────────────────────────────────────────────────────
-    driver: Mapped["User"] = relationship("User", back_populates="ride_offers")
-    requests: Mapped[list["RideRequest"]] = relationship(
+    driver: Mapped[User] = relationship("User", back_populates="ride_offers")
+    requests: Mapped[list[RideRequest]] = relationship(
         "RideRequest", back_populates="ride", cascade="all, delete-orphan"
     )
-    notifications: Mapped[list["Notification"]] = relationship(
+    notifications: Mapped[list[Notification]] = relationship(
         "Notification",
         back_populates="related_ride",
         foreign_keys="Notification.related_ride_id",
@@ -127,7 +127,7 @@ class RideOffer(Base):
     VIS_AUTH:    str = "auth"
     VIS_CONTACT: str = "contact"
 
-    def visibility_for(self, viewer: "User | None") -> str:
+    def visibility_for(self, viewer: User | None) -> str:
         """Return the serialization tier this viewer has earned on this ride."""
         if viewer is None:
             return self.VIS_PUBLIC
@@ -148,7 +148,7 @@ class RideOffer(Base):
 
     # ── Serialization ─────────────────────────────────────────────────────────
 
-    def to_dict(self, viewer: "User | None" = None) -> dict:
+    def to_dict(self, viewer: User | None = None) -> dict:
         """
         Serialize for a specific viewer.
 

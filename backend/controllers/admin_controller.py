@@ -3,12 +3,11 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from errors import ApiError, ErrorCode
-
 from database.repositories.audit_log_repository import AuditLogRepository
 from database.repositories.ride_repository import RideRepository
 from database.repositories.user_repository import UserRepository
-from services.auth_service import AuthError, AuthService
+from errors import ApiError, ErrorCode
+from services.auth_service import AuthService
 
 _VALID_ROLES = {"ADMIN", "PASSENGER", "DRIVER"}
 
@@ -41,6 +40,7 @@ class AdminController:
 
     def get_recent_activity(self, limit: int = 15) -> dict:
         from sqlalchemy import select
+
         from database.models.user import User
         logs = self._audit.find_recent(limit)
         recent_users = list(

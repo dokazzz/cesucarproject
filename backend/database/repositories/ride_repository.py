@@ -1,7 +1,7 @@
 """RideRepository — all database operations on ride_offers and ride_requests."""
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 
 from sqlalchemy import and_, func, select, tuple_
 from sqlalchemy.orm import Session, joinedload
