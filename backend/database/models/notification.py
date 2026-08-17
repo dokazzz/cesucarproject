@@ -4,8 +4,8 @@ Notification model — maps to the `notifications` table in Supabase.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Optional
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, String, Text
 from sqlalchemy import Enum as SAEnum
@@ -16,9 +16,9 @@ from database.connection import Base
 from database.models.enums import NotificationType
 
 if TYPE_CHECKING:
-    from database.models.user import User
     from database.models.ride_offer import RideOffer
     from database.models.ride_request import RideRequest
+    from database.models.user import User
 
 
 class Notification(Base):
@@ -33,10 +33,10 @@ class Notification(Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
     UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True
     )
-    related_ride_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    related_ride_id: Mapped[uuid.UUID | None] = mapped_column(
     UUID(as_uuid=True), ForeignKey("ride_offers.id"), nullable=True
     )
-    related_request_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    related_request_id: Mapped[uuid.UUID | None] = mapped_column(
     UUID(as_uuid=True), ForeignKey("ride_requests.id"), nullable=True
     )
     # ── Content ───────────────────────────────────────────────────────────────
@@ -57,13 +57,13 @@ class Notification(Base):
     )
 
     # ── Relationships ─────────────────────────────────────────────────────────
-    user: Mapped["User"] = relationship("User", back_populates="notifications")
-    related_ride: Mapped[Optional["RideOffer"]] = relationship(
+    user: Mapped[User] = relationship("User", back_populates="notifications")
+    related_ride: Mapped[RideOffer | None] = relationship(
         "RideOffer",
         back_populates="notifications",
         foreign_keys=[related_ride_id],
     )
-    related_request: Mapped[Optional["RideRequest"]] = relationship(
+    related_request: Mapped[RideRequest | None] = relationship(
         "RideRequest",
         back_populates="notifications",
         foreign_keys=[related_request_id],
@@ -75,8 +75,8 @@ class Notification(Base):
     def relative_time(self) -> str:
         if not self.created_at:
             return ""
-        now = datetime.now(timezone.utc)
-        created = self.created_at.replace(tzinfo=timezone.utc) if self.created_at.tzinfo is None else self.created_at
+        now = datetime.now(UTC)
+        created = self.created_at.replace(tzinfo=UTC) if self.created_at.tzinfo is None else self.created_at
         diff = now - created
         seconds = int(diff.total_seconds())
         if seconds < 60:

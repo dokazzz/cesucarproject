@@ -1,8 +1,6 @@
 """Admin routes — protected by admin role."""
 from __future__ import annotations
 
-from typing import Optional
-
 from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -18,8 +16,8 @@ _admin_only = require_role("admin")
 
 @router.get("/users", summary="List all users")
 def list_users(
-    search: Optional[str] = Query(None),
-    role: Optional[str] = Query(None),
+    search: str | None = Query(None),
+    role: str | None = Query(None),
     db: Session = Depends(get_db),
     _: User = Depends(_admin_only),
 ) -> list:
@@ -45,7 +43,7 @@ def get_stats(
 
 @router.get("/recent-activity", summary="Recent audit logs and new users")
 def recent_activity(
-    limit: int = 15,
+    limit: int = Query(15, ge=1, le=100),
     db: Session = Depends(get_db),
     _: User = Depends(_admin_only),
 ) -> dict:
@@ -93,7 +91,9 @@ def reset_password(
 
 @router.get("/audit-logs", summary="View recent audit log entries")
 def audit_logs(
-    limit: int = 100,
+    # Bounded: this was an unvalidated integer, so ?limit=10000000 would ask
+    # the database for the entire audit history in one response.
+    limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
     _: User = Depends(_admin_only),
 ) -> list:

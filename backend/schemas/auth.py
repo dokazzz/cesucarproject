@@ -1,8 +1,9 @@
 """Pydantic schemas for authentication endpoints."""
 from __future__ import annotations
 
-from pydantic import BaseModel, field_validator
 import re
+
+from pydantic import BaseModel, field_validator
 
 RGM_RE = re.compile(r"^\d{8}$")
 _PLATE_RE = re.compile(r'^[A-Z]{3}[0-9]{4}$|^[A-Z]{3}[0-9][A-Z][0-9]{2}$')

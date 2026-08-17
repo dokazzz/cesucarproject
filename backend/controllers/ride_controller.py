@@ -1,8 +1,6 @@
 """RideController — handles HTTP concerns for ride endpoints."""
 from __future__ import annotations
 
-from datetime import date
-
 from sqlalchemy.orm import Session
 
 from errors import ApiError, ErrorCode

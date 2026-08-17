@@ -1,0 +1,129 @@
+name: CI
+
+# Runs on every push and every pull request. The deploy half of the pipeline
+# arrives with the hosting work; this is the part that can exist today, and
+# it is the part that stops a regression reaching main.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  # A newer push to the same branch makes the older run irrelevant.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          # Pinned to match .python-version. Not cosmetic: passlib 1.7.4
+          # imports the stdlib `crypt` module, which was removed in 3.13.
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements-dev.txt
+
+      - name: Lint
+        working-directory: backend
+        run: ruff check . ../main.py
+
+      - name: Run tests
+        working-directory: backend
+        run: pytest
+        env:
+          # The suite sets its own configuration in conftest, but a missing
+          # value here would fail at import rather than as a test failure,
+          # which is a much more confusing way to find out.
+          SECRET_KEY: ci-secret-not-used-for-anything-real-0000
+          JWT_SECRET_KEY: ci-jwt-secret-not-used-for-anything-real
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:1/nonexistent
+
+  frontend:
+    name: Frontend syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Check app.js parses
+        run: node --check js/app.js
+
+      - name: Check inline page scripts parse
+        # The pages carry most of their logic in inline <script> blocks, so a
+        # syntax error there ships silently -- nothing else in this pipeline
+        # would ever load them.
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, subprocess, sys, tempfile, os
+
+          failures = []
+          for page in sorted(pathlib.Path(".").glob("*.html")):
+              html = page.read_text(encoding="utf-8")
+              blocks = re.findall(r"<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>", html, re.S)
+              for index, body in enumerate(blocks):
+                  if not body.strip():
+                      continue
+                  with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False,
+                                                   encoding="utf-8") as handle:
+                      handle.write("(async function(){\n" + body + "\n})();")
+                      path = handle.name
+                  result = subprocess.run(["node", "--check", path],
+                                          capture_output=True, text=True)
+                  os.unlink(path)
+                  if result.returncode != 0:
+                      failures.append(f"{page} block {index}:\n{result.stderr}")
+                  else:
+                      print(f"ok  {page} block {index}")
+
+          if failures:
+              print("\n".join(failures), file=sys.stderr)
+              sys.exit(1)
+          PY
+
+  hygiene:
+    name: Repository hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: No secrets or build artefacts tracked
+        # backend/.env was committed with real credentials once already, and
+        # .gitignore does not protect a file that is already tracked. This
+        # fails the build if one is ever added back.
+        run: |
+          tracked_env=$(git ls-files | grep -E '(^|/)\.env$' || true)
+          if [ -n "$tracked_env" ]; then
+            echo "::error::Environment files are tracked: $tracked_env"
+            exit 1
+          fi
+
+          tracked_pyc=$(git ls-files | grep -E '\.pyc$' || true)
+          if [ -n "$tracked_pyc" ]; then
+            echo "::error::Compiled Python files are tracked: $tracked_pyc"
+            exit 1
+          fi
+
+          echo "No tracked .env or .pyc files."
+
+      - name: No hardcoded secret fallbacks in config
+        # The specific regression that let a misconfigured host boot happily
+        # and sign tokens with a value published in this repository.
+        run: |
+          if grep -nE '(SECRET_KEY|JWT_SECRET_KEY|DATABASE_URL).*\bor\b\s*"' backend/config.py; then
+            echo "::error::config.py appears to have a hardcoded fallback again"
+            exit 1
+          fi
+          echo "No fallback secrets in config.py."

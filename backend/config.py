@@ -1,5 +1,7 @@
 from __future__ import annotations
+
 import os
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -99,6 +101,11 @@ class Config:
     # and answer with Deprecation/Sunset headers. Clients that send
     # X-Client-Version below the minimum get 426 and are told to update --
     # the only lever that exists over an app already on someone's phone.
+    # Swagger and ReDoc are a complete map of the API surface. Useful when
+    # showing the project to someone, unhelpful when handed to whoever finds
+    # the host. Defaults to on only in DEBUG; set explicitly to override.
+    ENABLE_DOCS: bool = _env("ENABLE_DOCS", str(DEBUG).lower()).lower() == "true"
+
     API_SUNSET_DATE: str = _env("API_SUNSET_DATE", "2027-08-15")
     MIN_CLIENT_VERSION: str = _env("MIN_CLIENT_VERSION", "0.0.0")
 

@@ -19,7 +19,7 @@ rows written before 2019 and if the rule ever changes back.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
 # Where the users are. CESUCA is in Cachoeirinha, Rio Grande do Sul.
@@ -30,7 +30,7 @@ def local_to_utc(dt: datetime) -> datetime:
     """Interpret a naive datetime as local wall-clock time and return UTC."""
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=APP_TZ)
-    return dt.astimezone(timezone.utc)
+    return dt.astimezone(UTC)
 
 
 def to_local(dt: datetime | None) -> datetime | None:
@@ -39,7 +39,7 @@ def to_local(dt: datetime | None) -> datetime | None:
         return None
     if dt.tzinfo is None:
         # Legacy rows read back without an offset: they are UTC instants.
-        dt = dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=UTC)
     return dt.astimezone(APP_TZ)
 
 
@@ -50,4 +50,4 @@ def parse_local(date_str: str, time_str: str) -> datetime:
 
 
 def now_utc() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)

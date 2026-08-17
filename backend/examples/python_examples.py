@@ -15,7 +15,8 @@ the browser or mobile clients.
 from __future__ import annotations
 
 import os
-from supabase import create_client, Client
+
+from supabase import Client, create_client
 
 SUPABASE_URL = os.environ["SUPABASE_URL"]
 SUPABASE_KEY = os.environ["SUPABASE_SERVICE_KEY"]

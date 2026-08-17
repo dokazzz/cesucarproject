@@ -1,7 +1,7 @@
 """UserRepository — all database operations on the users table."""
 from __future__ import annotations
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from database.models.user import User

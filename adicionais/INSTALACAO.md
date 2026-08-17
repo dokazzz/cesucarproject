@@ -1,235 +1,186 @@
 # CESUCAR — Guia de Instalação e Execução
 
-## Visão Geral
+Guia passo a passo para rodar o projeto localmente.
 
-O CESUCAR é dividido em duas partes:
+> Este documento descrevia uma versão anterior em Flask com dados em memória.
+> O projeto migrou para FastAPI, SQLAlchemy, Alembic e PostgreSQL, e este guia
+> foi reescrito para o que existe hoje no repositório.
+
+## Visão Geral
 
 | Parte | Tecnologia | Descrição |
 |---|---|---|
-| **Frontend** | HTML + CSS + JavaScript | Interface do usuário (abrir no navegador) |
-| **Backend** | Python + Flask | API REST com regras de negócio |
+| **Frontend** | HTML + CSS + JavaScript | Interface do usuário, sem build |
+| **Backend** | Python + FastAPI | API REST com as regras de negócio |
+| **Banco** | PostgreSQL | Dados persistentes, migrados com Alembic |
 
 ---
 
 ## Pré-requisitos
 
-- Python 3.10 ou superior
-- pip (gerenciador de pacotes Python)
+- **Python 3.12** — a versão importa. O `passlib` 1.7.4 importa o módulo
+  `crypt` da biblioteca padrão, que foi removido no Python 3.13. O arquivo
+  `.python-version` fixa a versão.
+- PostgreSQL acessível (local ou remoto)
 - Navegador moderno (Chrome, Firefox, Edge)
 
 ---
 
-## 1. Instalar dependências do backend
+## 1. Criar o ambiente virtual
 
-Abra o terminal na pasta `backend/` e execute:
+Na raiz do projeto:
+
+```bash
+python -m venv .venv
+```
+
+Ative o ambiente:
+
+```bash
+.venv\Scripts\activate          # Windows
+source .venv/bin/activate       # Linux / macOS
+```
+
+---
+
+## 2. Instalar as dependências
+
+```bash
+pip install -r backend/requirements-dev.txt
+```
+
+O arquivo `requirements-dev.txt` inclui o `requirements.txt` de produção mais
+as ferramentas de teste (`pytest`, `ruff`). Para um servidor, use apenas
+`backend/requirements.txt`.
+
+---
+
+## 3. Configurar as variáveis de ambiente
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Abra `backend/.env` e preencha. **Três valores são obrigatórios** e a aplicação
+se recusa a iniciar sem eles:
+
+| Variável | O que é |
+|---|---|
+| `SECRET_KEY` | Chave da aplicação, mínimo 32 caracteres |
+| `JWT_SECRET_KEY` | Assina os tokens de acesso, mínimo 32 caracteres |
+| `DATABASE_URL` | `postgresql://usuario:senha@host:5432/banco` |
+
+Para gerar as chaves:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
+
+Não existe mais valor padrão de desenvolvimento para essas variáveis. Isso é
+proposital: antes, uma chave ausente caía num valor fixo escrito no código, e o
+servidor subia normalmente assinando tokens com um segredo público. Hoje ele
+para na inicialização com uma mensagem explicando o que falta.
+
+Defina também `ADMIN_PASSWORD` (mínimo 8 caracteres). A conta de administrador
+é criada na primeira inicialização com o RGM `00000001`.
+
+> `backend/.env` está no `.gitignore` e **nunca** deve ser versionado.
+
+---
+
+## 4. Aplicar as migrações
 
 ```bash
 cd backend
-pip install -r requirements.txt
+alembic upgrade head
 ```
 
-### Pacotes instalados
-
-| Pacote | Versão mínima | Função |
-|---|---|---|
-| `flask` | 3.0 | Framework web para a API |
-| `flask-cors` | 4.0 | Permite que o frontend acesse a API (CORS) |
+Isso cria as tabelas e os tipos enumerados no banco indicado por
+`DATABASE_URL`.
 
 ---
 
-## 2. Executar o servidor Flask
+## 5. Subir a API
+
+Ainda em `backend/`:
+
+```bash
+uvicorn app:app --reload --port 8000
+```
+
+A API responde em `http://localhost:8000`.
+
+Para conferir se está no ar:
+
+- `http://localhost:8000/status` — o processo respondeu
+- `http://localhost:8000/health` — o processo respondeu **e** alcançou o banco
+
+Se quiser a documentação interativa em `/docs`, defina `ENABLE_DOCS=true` no
+`.env`. Ela fica desligada por padrão fora de `DEBUG`, porque expõe o mapa
+completo da API.
+
+---
+
+## 6. Abrir o frontend
+
+O frontend é estático e não precisa de build. Duas opções:
+
+**a) Servidor estático separado** — no VS Code, extensão *Live Server*, botão
+"Go Live". A porta 5500 já está na lista de origens permitidas do CORS.
+
+**b) Tudo pelo backend** — na raiz do projeto:
+
+```bash
+python main.py
+```
+
+Isso serve as páginas HTML e a API no mesmo endereço.
+
+Abra `index.html` e faça login com o RGM `00000001` e a senha definida em
+`ADMIN_PASSWORD`, ou cadastre um usuário novo.
+
+---
+
+## 7. Rodar os testes
 
 ```bash
 cd backend
-python app.py
+pytest
+ruff check . ../main.py
 ```
 
-Saída esperada:
-
-```
-  CESUCAR API
-  5 caronas de demonstração carregadas.
-  Acesse: http://localhost:5000/status ou http://localhost:8000/status 
-```
-
-O servidor fica disponível em `http://localhost:5000` ou `http://localhost:8080`.
+São 157 testes e levam cerca de 12 segundos. **Não é preciso ter banco**: os
+objetos são criados em memória. A `DATABASE_URL` usada nos testes aponta para
+uma porta fechada de propósito, para garantir que nenhum teste alcance um banco
+real por engano.
 
 ---
 
-## 3. Abrir o frontend
+## Problemas comuns
 
-Com o servidor Flask rodando, abra o arquivo `index.html` no navegador.
-
-**Forma simples (sem servidor):**
-- Clique duas vezes em `index.html` — o frontend funciona com localStorage.
-
-**Forma completa (com integração à API):**
-- Serve o frontend com qualquer servidor estático. Exemplo com Python:
-
-```bash
-# Na raiz do projeto (pasta cesucar/)
-python -m http.server 8080
-```
-
-- Acesse `http://localhost:8080`
+| Sintoma | Causa provável |
+|---|---|
+| `ConfigError: SECRET_KEY is not set` | Falta preencher `backend/.env`. A mensagem diz qual variável e como gerá-la. |
+| `ZoneInfoNotFoundError: America/Sao_Paulo` | Falta o pacote `tzdata`. O Windows não traz banco de fusos do sistema. Está no `requirements.txt`. |
+| `ModuleNotFoundError: No module named 'crypt'` | Python 3.13 ou superior. Use 3.12. |
+| `connection refused` na porta 5432 | `DATABASE_URL` aponta para um banco que não está de pé. |
+| `429 Muitas tentativas` no login | Limite de 8 tentativas por minuto por IP. Ajuste `RATE_LIMIT_LOGIN` para testar. |
+| Login expira rápido | Esperado: o token de acesso dura 15 minutos e o frontend o renova sozinho pelo refresh token. |
 
 ---
 
-## 4. Testar a API
+## Implantação
 
-### 4.1 Verificar status
+Ainda não definida. O repositório tem configurações de Vercel e Railway que
+sobraram de tentativas anteriores; a decisão é uma VM Oracle Cloud Always Free
+com Caddy para TLS, ainda não provisionada. Este guia será atualizado quando
+isso existir de verdade.
 
-```bash
-curl http://localhost:5000/status
-```
+Duas coisas precisam acontecer antes de qualquer implantação com dados reais:
 
-Resposta esperada:
-```json
-{"sistema": "Cesucar", "status": "Online"}
-```
-
-### 4.2 Calcular custo de carona
-
-```bash
-curl -X POST http://localhost:5000/calcular-carona \
-  -H "Content-Type: application/json" \
-  -d '{"distancia": 25, "consumo": 12, "preco_combustivel": 6.00, "passageiros": 4}'
-```
-
-Resposta esperada:
-```json
-{"custo_total": 12.5, "valor_por_pessoa": 3.12}
-```
-
-### 4.3 Listar caronas
-
-```bash
-curl http://localhost:5000/caronas
-```
-
-Filtrar apenas caronas de ida:
-```bash
-curl http://localhost:5000/caronas?tipo=ida
-```
-
-### 4.4 Cadastrar nova carona
-
-```bash
-curl -X POST http://localhost:5000/caronas \
-  -H "Content-Type: application/json" \
-  -d '{
-    "motorista": "Ana Costa",
-    "origem": "Cachoeirinha",
-    "destino": "Porto Alegre",
-    "horario": "07:30",
-    "vagas": 3,
-    "valor": 10.0,
-    "data": "2026-06-10",
-    "veiculo": "Onix prata",
-    "tipo": "ida"
-  }'
-```
-
-### 4.5 Remover carona
-
-```bash
-curl -X DELETE http://localhost:5000/caronas/1
-```
-
----
-
-## 5. Estrutura de arquivos
-
-```
-cesucar/
-├── backend/
-│   ├── app.py              ← API Flask (ponto de entrada)
-│   ├── carona.py           ← Classe Carona + GerenciadorCaronas (POO)
-│   └── requirements.txt    ← Dependências Python
-├── css/
-│   └── style.css
-├── js/
-│   └── app.js
-├── index.html
-├── login.html
-├── cadastro.html
-├── dashboard.html
-├── procurar-carona.html
-├── oferecer-carona.html    ← Página do motorista (novo)
-├── logo.png
-└── INSTALACAO.md           ← Este arquivo
-```
-
----
-
-## 6. Rotas da API
-
-| Método | Rota | Descrição |
-|---|---|---|
-| GET | `/status` | Status do sistema |
-| POST | `/calcular-carona` | Calcula custo e valor por pessoa |
-| GET | `/caronas` | Lista todas as caronas |
-| GET | `/caronas?tipo=ida` | Lista apenas caronas de ida |
-| GET | `/caronas?tipo=volta` | Lista apenas caronas de volta |
-| POST | `/caronas` | Cadastra nova carona |
-| GET | `/caronas/<id>` | Busca carona por ID |
-| PUT | `/caronas/<id>` | Atualiza carona |
-| DELETE | `/caronas/<id>` | Remove carona |
-
----
-
-## 7. Fórmula de cálculo de custo
-
-```
-custo_total      = (distancia / consumo) × preco_combustivel
-valor_por_pessoa = custo_total / passageiros
-```
-
-**Exemplo:**
-- Distância: 25 km
-- Consumo: 12 km/L
-- Preço do combustível: R$ 6,00/L
-- Passageiros: 4
-
-```
-custo_total      = (25 / 12) × 6,00 = R$ 12,50
-valor_por_pessoa = 12,50 / 4        = R$ 3,12
-```
-
----
-
-## 8. Integração Frontend ↔ Backend
-
-O frontend usa `fetch()` para se comunicar com a API Flask.
-
-**Exemplo de uso no JavaScript:**
-
-```javascript
-// Calcular custo de uma carona
-async function calcularCarona(distancia, consumo, precoCombustivel, passageiros) {
-  try {
-    const response = await fetch("http://localhost:5000/calcular-carona", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ distancia, consumo, preco_combustivel: precoCombustivel, passageiros })
-    });
-    const data = await response.json();
-    console.log("Custo total:", data.custo_total);
-    console.log("Por pessoa:", data.valor_por_pessoa);
-  } catch (error) {
-    console.error("API indisponível, usando cálculo local.");
-  }
-}
-```
-
-O sistema foi projetado com **graceful degradation**: se a API não estiver rodando, o frontend continua funcionando com os dados armazenados no `localStorage`.
-
----
-
-## 9. Preparação para banco de dados
-
-A classe `GerenciadorCaronas` em `carona.py` usa uma lista em memória intencionalmente simples, facilitando a futura migração para um banco de dados. Para integrar com SQLite, PostgreSQL ou outro BD, substitua os métodos `adicionar`, `listar`, `buscar_por_id`, `atualizar` e `remover` por chamadas ao ORM/driver desejado — a interface pública permanece a mesma.
-
----
-
-*CESUCAR — Centro Universitário CESUCA · 2026*
+1. **Rotacionar os segredos.** O `backend/.env` foi versionado com valores
+   reais no passado e eles continuam no histórico do repositório.
+2. **Aplicar as migrações `003` e `004`.** A `003` corrige o horário das
+   caronas já cadastradas e precisa ir junto com o código que corrige a
+   gravação — aplicada depois, sobre dados já corretos, ela erra para o outro
+   lado.

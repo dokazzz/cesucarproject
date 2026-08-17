@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy import Enum as SAEnum
@@ -29,7 +29,7 @@ class AuditLog(Base):
     )
 
     # ── Foreign key (nullable — retain log when user is deleted) ─────────────
-    user_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
     UUID(as_uuid=True), ForeignKey("users.id"), nullable=True, index=True
     )
 
@@ -41,11 +41,11 @@ class AuditLog(Base):
     )
 
     # ── Context ───────────────────────────────────────────────────────────────
-    entity_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    entity_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
-    details: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB, nullable=True)
-    ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
-    user_agent: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    entity_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    entity_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    details: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # ── Timestamp ─────────────────────────────────────────────────────────────
     created_at: Mapped[datetime] = mapped_column(
@@ -53,7 +53,7 @@ class AuditLog(Base):
     )
 
     # ── Relationships ─────────────────────────────────────────────────────────
-    user: Mapped[Optional["User"]] = relationship("User", back_populates="audit_logs")
+    user: Mapped[User | None] = relationship("User", back_populates="audit_logs")
 
     # ── Serialization ─────────────────────────────────────────────────────────
 

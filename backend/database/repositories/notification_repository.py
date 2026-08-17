@@ -15,13 +15,15 @@ class NotificationRepository:
 
     # ── Queries ────────────────────────────────────────────────────────────────
 
-    def find_by_user(self, user_id, limit: int = 50) -> list[Notification]:
+    def find_by_user(
+        self, user_id, limit: int = 50, *, unread_only: bool = False
+    ) -> list[Notification]:
+        stmt = select(Notification).where(Notification.user_id == user_id)
+        if unread_only:
+            stmt = stmt.where(Notification.is_read == False)  # noqa: E712
         return list(
             self.db.execute(
-                select(Notification)
-                .where(Notification.user_id == user_id)
-                .order_by(Notification.created_at.desc())
-                .limit(limit)
+                stmt.order_by(Notification.created_at.desc()).limit(limit)
             ).scalars().all()
         )
 

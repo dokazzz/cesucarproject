@@ -518,9 +518,9 @@
   async function updateNotifBadge() {
     if (!isLoggedIn()) return;
     try {
-      const notifs = await getNotifications();
-      const count = notifs.filter((n) => !n.read_status && !n.read).length;
-      _setBadgeCount(count);
+      // One COUNT rather than fetching fifty notifications to count them here.
+      const res = await apiFetch("/notifications/unread-count");
+      _setBadgeCount(res?.unread ?? 0);
     } catch { /* ignore */ }
   }
 

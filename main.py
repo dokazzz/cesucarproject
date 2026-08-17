@@ -2,8 +2,9 @@
 Entry point for Vercel deployment.
 Adds backend/ to sys.path, mounts static assets, and serves HTML pages via clean URLs.
 """
-import sys
 import os
+import sys
+
 from fastapi import HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
