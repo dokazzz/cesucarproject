@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Uroute",
+    "slug": "uroute",
+    "version": "1.0.0",
+    "scheme": "uroute",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0f4c81"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "br.edu.cesuca.uroute"
+    },
+    "android": {
+      "package": "br.edu.cesuca.uroute",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f4c81",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O Uroute usa suas fotos para você enviar o documento de verificação de aluno.",
+          "cameraPermission": "O Uroute usa a câmera para você fotografar o documento de verificação de aluno."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

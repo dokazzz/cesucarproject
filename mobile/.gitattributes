@@ -1,0 +1,6 @@
+# Guarda tudo com LF no repositório, independente de quem commitou de qual sistema.
+# Sem isto, um time no Windows gera diff de arquivo inteiro só por fim de linha.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ttf binary

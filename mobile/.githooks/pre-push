@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+#
+# Recusa push direto na main.
+#
+# Isto é um freio, não uma tranca. Quem quiser passar por cima consegue, com
+# --no-verify ou simplesmente não instalando o hook. A tranca de verdade é a
+# proteção de branch do GitHub, que hoje não dá pra ligar porque o
+# repositório é privado em conta free e a API responde 403.
+#
+# Mesmo assim vale a pena: o que aconteceu aqui não foi ninguém burlando o
+# processo de propósito, foi um push que ninguém avisou que era errado. Pra
+# esse caso, um aviso claro na hora resolve.
+#
+# Instalar (uma vez por pessoa, por clone):
+#   git config core.hooksPath mobile/.githooks
+#
+# Emergência, quando o Iago precisa mesmo:
+#   git push --no-verify
+
+set -euo pipefail
+
+BRANCH_PROTEGIDA="main"
+remoto="${1:-}"
+
+while read -r _ref_local sha_local ref_remoto _sha_remoto; do
+  # Push de exclusão manda sha zerado. Barrar também: apagar a main é pior
+  # que commitar nela.
+  if [ "${ref_remoto}" = "refs/heads/${BRANCH_PROTEGIDA}" ]; then
+    echo >&2
+    echo >&2 "  Push direto na ${BRANCH_PROTEGIDA} recusado."
+    echo >&2
+    if [ "${sha_local}" = "0000000000000000000000000000000000000000" ]; then
+      echo >&2 "  Você está tentando APAGAR a ${BRANCH_PROTEGIDA} em ${remoto}."
+    else
+      echo >&2 "  A ${BRANCH_PROTEGIDA} só recebe código por pull request, pra que o CI"
+      echo >&2 "  rode e alguém leia antes de entrar. Não é burocracia: já entrou"
+      echo >&2 "  um package-lock quebrado por essa porta e travou os PRs de todo"
+      echo >&2 "  mundo por um dia."
+    fi
+    echo >&2
+    echo >&2 "  O caminho:"
+    echo >&2 "    git checkout -b tipo/nome-curto"
+    echo >&2 "    git push -u origin tipo/nome-curto"
+    echo >&2 "    gh pr create        (ou abre pelo site)"
+    echo >&2
+    echo >&2 "  Tipos: feat, fix, docs, chore, refactor, test."
+    echo >&2
+    exit 1
+  fi
+done
+
+exit 0

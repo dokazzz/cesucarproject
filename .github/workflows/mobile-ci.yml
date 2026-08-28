@@ -1,0 +1,59 @@
+name: Mobile CI
+
+# Escopado a `mobile/`: este repo também tem o site/backend na raiz, e um
+# commit ali não precisa empacotar o app Expo.
+on:
+  pull_request:
+    paths: ['mobile/**']
+  push:
+    branches: [main]
+    paths: ['mobile/**']
+
+# PR novo cancela a execução anterior do mesmo PR, pra não empilhar fila.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: mobile
+
+jobs:
+  verificar:
+    name: Tipos, lint e testes
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          # LTS, não a versão mais nova: o Expo SDK 57 é testado contra ela.
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Tipos
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Formatação
+        run: npx prettier --check "app/**/*.tsx" "src/**/*.{ts,tsx}"
+
+      - name: Testes
+        run: npm test
+
+      # Confere contra o que o git rastreia, nao contra o disco: link pra
+      # pasta no .gitignore passa despercebido de qualquer outro jeito.
+      - name: Links da documentacao
+        run: npm run checar-links
+
+      # Prova que o app ainda empacota. Pega erro que typecheck não vê,
+      # como import quebrado ou módulo nativo faltando.
+      - name: Empacotar Android
+        run: npx expo export --platform android --output-dir /tmp/ci-bundle
